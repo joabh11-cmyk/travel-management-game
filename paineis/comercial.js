@@ -303,7 +303,7 @@ window.AGENCIA.painelComercial = (function() {
       const f = Number(fFee.value);
       const receita = (v - c) + f;
       const margem = v > 0 ? (receita / v) * 100 : 0;
-      calcEl.textContent = \`Receita Estimada: R$ \${receita.toLocaleString('pt-BR')} (Margem: \${margem.toFixed(1)}%)\`;
+      calcEl.textContent = `Receita Estimada: R$ ${receita.toLocaleString('pt-BR')} (Margem: ${margem.toFixed(1)}%)`;
     }
 
     fValor.addEventListener('input', updateCalc);
