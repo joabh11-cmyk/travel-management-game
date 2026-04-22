@@ -325,7 +325,7 @@ window.AGENCIA.ui = {
       <div class="card">
         <div class="card-header">
           <div class="card-title">Log do Dia ${s.tempo.dia}</div>
-          <button class="btn-sm" onclick="window.AGENCIA.loop.avancarDia();window.AGENCIA.ui.renderizarPainelAtivo()" id="btn-avancar-dia"
+          <button class="btn-sm" onclick="if(window.AGENCIA.getState().eventosPendentes && window.AGENCIA.getState().eventosPendentes.length > 0) { alert('Resolva os eventos pendentes antes de avançar o dia!'); window.AGENCIA.ui.mostrarEventosPendentes(); } else { window.AGENCIA.loop.avancarDia(); window.AGENCIA.ui.renderizarPainelAtivo(); }" id="btn-avancar-dia"
             style="background:var(--blue);border-color:var(--blue);color:#fff;padding:6px 16px;font-weight:700;">
             Avançar Dia →
           </button>
@@ -380,6 +380,9 @@ window.AGENCIA.ui = {
     };
     const mc = document.getElementById('main-content');
     if (mc && map[painel]) { mc.innerHTML = ''; map[painel].render(mc); }
+
+    // Dispara modal de eventos F7, se houver
+    this.mostrarEventosPendentes();
   },
 
   // ----------------------------------------------------------
@@ -441,6 +444,69 @@ window.AGENCIA.ui = {
     el.addEventListener('click', function(e) {
       if (e.target === el) el.remove();
     });
+  },
+
+  // ----------------------------------------------------------
+  // Eventos de Mercado Pendentes (F7)
+  // ----------------------------------------------------------
+  mostrarEventosPendentes: function() {
+    const s = window.AGENCIA.getState();
+    if (!s || s.gameOver || !s.eventosPendentes || s.eventosPendentes.length === 0) return;
+
+    // Se já tem modal aberto (exceto o próprio modal-evento para não encavalar)
+    if (document.getElementById('modal-overlay-evento')) return;
+
+    const evento = s.eventosPendentes[0];
+
+    const el = document.createElement('div');
+    el.id = 'modal-overlay-evento';
+    el.className = 'modal-overlay';
+    
+    // Evita clicar fora para fechar (é obrigatório)
+    
+    const botoes = evento.opcoes.map(o => {
+      let extra = o.impactos.custoPA ? ` <small>(Custa ${o.impactos.custoPA} PA)</small>` : '';
+      return `<button class="btn-sm" style="width:100%; text-align:left; justify-content:flex-start; margin-bottom:10px; padding:12px; background:var(--surface); border:1px solid var(--border); color:var(--text);"
+                onclick="window.AGENCIA.ui.resolverEventoUi('${evento.instanciaId}', '${o.id}')">
+                ${o.label}${extra}
+              </button>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="modal-box fade-in" style="border-color:var(--amber);">
+        <div class="modal-header" style="border-color:var(--amber);">
+          <div class="modal-tipo" style="color:var(--amber);">⚠️ EVENTO DE MERCADO</div>
+          <div class="modal-titulo">${evento.titulo}</div>
+        </div>
+        <div class="modal-body">
+          <p style="color:var(--text-2);font-size:14px;line-height:1.6;margin-bottom:20px;">
+            ${evento.mensagem.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}
+          </p>
+          <div style="margin-top:20px;">
+            <p style="font-size:13px; font-weight:700; margin-bottom:10px; color:var(--text);">Como você quer agir?</p>
+            ${botoes}
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(el);
+  },
+
+  resolverEventoUi: function(instanciaId, opcaoId) {
+    const s = window.AGENCIA.getState();
+    const ok = window.AGENCIA.events.resolverEvento(instanciaId, opcaoId, s);
+    if (!ok) return; // Talvez sem PA suficiente, o logEvento já avisa
+
+    const el = document.getElementById('modal-overlay-evento');
+    if (el) el.remove();
+
+    // Re-renderiza a tela atual (atualiza stats, PA, caixa)
+    this.atualizarTopbar();
+    this.renderizarPainelAtivo();
+    
+    // Tenta mostrar o próximo, se houver
+    this.mostrarEventosPendentes();
   },
 
   // ----------------------------------------------------------

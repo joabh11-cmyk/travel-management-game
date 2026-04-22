@@ -26,6 +26,7 @@ window.AGENCIA.clientAI = (function() {
     else precoComp = ((1.2 - ratio) / 0.4) * 100;
 
     let confiancaComp = lead.confianca || 50;
+    if (lead.confiancaExtra) confiancaComp += lead.confiancaExtra;
     
     const dias = state.tempo.dia - lead.diaCriacao;
     let velocidadeComp = dias === 0 ? 100 : (dias === 1 ? 75 : (dias === 2 ? 40 : 10));

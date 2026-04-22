@@ -29,6 +29,11 @@ window.AGENCIA.loop = (function() {
       window.AGENCIA.economy.processarFluxoDeCaixaDiario(s.tempo.dia);
     }
 
+    // 3.b Sorteio de Eventos (Fase 7)
+    if (window.AGENCIA.events) {
+      window.AGENCIA.events.sortearEventosDoDia(s.tempo.dia, s);
+    }
+
     // 4. Atualizar fadiga do dono (1 ponto por dia de operação)
     _atualizarFadiga(s, BAL);
 
