@@ -175,8 +175,8 @@ window.AGENCIA.BAL = {
       emoji:          '👨‍👩‍👧',
       tipo:           'organico',
       custoMensal:    0,
-      leadsBaseDia:   1.2,
-      qualidade:      0.60,
+      leadsDia:       { min: 0.4, max: 0.8 },
+      confianca:      { min: 55, max: 80 },
       maturacao:      1,    // dias
       disponivelDia1: true,
     },
@@ -185,8 +185,8 @@ window.AGENCIA.BAL = {
       emoji:          '🗣️',
       tipo:           'organico',
       custoMensal:    0,
-      leadsBaseDia:   0.8,
-      qualidade:      0.75,
+      leadsDia:       { min: 0.3, max: 0.9 },
+      confianca:      { min: 40, max: 75 },
       maturacao:      3,
       disponivelDia1: true,
     },
@@ -195,8 +195,8 @@ window.AGENCIA.BAL = {
       emoji:          '📣',
       tipo:           'organico',
       custoMensal:    50,
-      leadsBaseDia:   1.0,
-      qualidade:      0.55,
+      leadsDia:       { min: 0.5, max: 1.2 },
+      confianca:      { min: 25, max: 55 },
       maturacao:      2,
       disponivelDia1: true,
     },
@@ -205,8 +205,8 @@ window.AGENCIA.BAL = {
       emoji:          '📱',
       tipo:           'pago',
       custoMensal:    800,
-      leadsBaseDia:   2.5,
-      qualidade:      0.40,
+      leadsDia:       { min: 1.5, max: 3.5 },
+      confianca:      { min: 20, max: 40 },
       maturacao:      5,
       disponivelDia1: false,
     },
@@ -215,8 +215,8 @@ window.AGENCIA.BAL = {
       emoji:          '📊',
       tipo:           'pago',
       custoMensal:    500,
-      leadsBaseDia:   3.0,
-      qualidade:      0.35,
+      leadsDia:       { min: 2.0, max: 4.0 },
+      confianca:      { min: 10, max: 35 },
       maturacao:      3,
       disponivelDia1: false,
     },
@@ -225,11 +225,47 @@ window.AGENCIA.BAL = {
       emoji:          '🤝',
       tipo:           'estruturado',
       custoMensal:    200,
-      leadsBaseDia:   0.4,
-      qualidade:      0.80,
+      leadsDia:       { min: 0.1, max: 0.6 },
+      confianca:      { min: 60, max: 90 },
       maturacao:      14,
       disponivelDia1: false,
     },
+  },
+
+  // ----------------------------------------------------------
+  // PERFIS DE CLIENTES
+  // ----------------------------------------------------------
+  perfis: {
+    cacador_preco: {
+      label: 'Caçador de Preço',
+      emoji: '🤑',
+      chance: 0.30,
+      modificadores: { pesoPreco: 2.0, exigencia: -0.2 }
+    },
+    inseguro: {
+      label: 'Inseguro',
+      emoji: '😰',
+      chance: 0.22,
+      modificadores: { pesoConfianca: 1.5, chanceObjecao: 0.2 }
+    },
+    apressado: {
+      label: 'Apressado',
+      emoji: '⏱️',
+      chance: 0.18,
+      modificadores: { pesoVelocidade: 2.0, pesoAdequacao: -0.5 }
+    },
+    detalhista: {
+      label: 'Detalhista',
+      emoji: '🧐',
+      chance: 0.18,
+      modificadores: { pesoAdequacao: 1.5, exigencia: 0.3 }
+    },
+    indicacao: {
+      label: 'Indicação',
+      emoji: '🤝',
+      chance: 0.12,
+      modificadores: { pesoConfianca: 2.0, pesoReputacao: 1.5 }
+    }
   },
 
   // ----------------------------------------------------------

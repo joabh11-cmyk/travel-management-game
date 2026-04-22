@@ -841,6 +841,56 @@ body {
 .badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-sm); }
 .badge-warn { background: var(--amber-bg); border: 1px solid var(--amber-border); color: var(--amber); }
 
+/* --- Comercial: Leads Inbox --- */
+.lead-item {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--blue);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+.lead-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.lead-nome {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-1);
+}
+.lead-canal {
+  font-size: 12px;
+}
+.lead-info {
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+  color: var(--text-2);
+  margin-bottom: 12px;
+}
+.lead-actions {
+  display: flex;
+  gap: 8px;
+}
+.btn-atender {
+  background: var(--blue-bg);
+  border-color: var(--blue-border);
+  color: var(--blue);
+}
+.btn-atender:hover {
+  background: var(--blue);
+  color: #fff;
+  border-color: var(--blue);
+}
+.btn-descartar:hover {
+  background: var(--red-bg);
+  border-color: var(--red);
+  color: var(--red);
+}
+
 /* Responsive mínimo */
 @media (max-width: 900px) {
   .inicio-left { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }

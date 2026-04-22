@@ -33,6 +33,12 @@ window.AGENCIA.loop = (function() {
     // 5. Resetar PA com base na fadiga
     _resetarPA(s, BAL);
 
+    // 5.b. Atualizar Leads (F3)
+    if (window.AGENCIA.leads) {
+      window.AGENCIA.leads.expirarLeadsDia();
+      window.AGENCIA.leads.gerarLeadsDia();
+    }
+
     // 6. Fechamentos periódicos
     let resultado = null;
     if (s.tempo.dia % 7 === 0) {
