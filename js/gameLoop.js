@@ -39,6 +39,11 @@ window.AGENCIA.loop = (function() {
       window.AGENCIA.leads.gerarLeadsDia();
     }
 
+    // 5.c. Expirar leads no pipeline (F4)
+    if (window.AGENCIA.pipeline) {
+      window.AGENCIA.pipeline.verificarExpiracoesDiarias();
+    }
+
     // 6. Fechamentos periódicos
     let resultado = null;
     if (s.tempo.dia % 7 === 0) {
