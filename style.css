@@ -664,9 +664,187 @@ body {
 }
 .fade-in { animation: fadeIn 0.25s ease both; }
 
+/* ============================================================
+   F2 — COMPONENTES DO GAME LOOP
+   ============================================================ */
+
+/* --- Modal overlay --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+}
+.modal-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 520px;
+  overflow: hidden;
+}
+.modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-tipo {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin-bottom: 4px;
+}
+.modal-titulo {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-1);
+}
+.modal-body {
+  padding: 20px 24px;
+}
+.modal-linha {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-2);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.modal-linha:last-child { border-bottom: none; }
+.modal-linha .g { color: var(--green); font-weight: 600; }
+.modal-linha .r { color: var(--red);   font-weight: 600; }
+.modal-linha .a { color: var(--amber); font-weight: 600; }
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* --- Event log --- */
+.event-log {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 60px;
+}
+.log-empty {
+  font-size: 12px;
+  color: var(--text-3);
+  font-style: italic;
+  padding: 8px 0;
+}
+.log-entry {
+  font-size: 12px;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  border-left: 2px solid var(--border);
+  color: var(--text-2);
+  background: var(--bg-elevated);
+  line-height: 1.4;
+}
+.log-acao  { border-color: var(--blue);  color: var(--text-1); }
+.log-custo { border-color: var(--amber); }
+.log-info  { border-color: var(--border-strong); }
+.log-aviso { border-color: var(--red);   color: var(--red); }
+
+/* --- Painel de Caixa --- */
+.saldo-destaque {
+  font-size: 36px;
+  font-weight: 900;
+  font-family: var(--font-mono);
+  letter-spacing: -1px;
+  margin: 8px 0 4px;
+  color: var(--text-1);
+}
+.saldo-destaque.g { color: var(--green); }
+.saldo-destaque.a { color: var(--amber); }
+.saldo-destaque.r { color: var(--red); }
+
+.alerta-msg {
+  font-size: 11px;
+  color: var(--red);
+  background: var(--red-bg);
+  border: 1px solid var(--red);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  margin-top: 8px;
+}
+
+.two-col-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.fluxo-linha {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.fluxo-linha:last-child { border-bottom: none; }
+.fluxo-desc { color: var(--text-2); }
+.fluxo-val  { font-family: var(--font-mono); font-weight: 600; font-size: 12px; }
+.fluxo-val.g { color: var(--green); }
+.fluxo-val.r { color: var(--red); }
+
+.fluxo-total {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-strong);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+.fluxo-total.entrada { color: var(--green); }
+.fluxo-total.saida   { color: var(--red); }
+
+.empty-list {
+  font-size: 11px;
+  color: var(--text-3);
+  font-style: italic;
+  padding: 8px 0;
+}
+
+/* Histórico semanal */
+.hist-row {
+  display: grid;
+  grid-template-columns: 60px 1fr 1fr 1fr 1fr;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  align-items: center;
+}
+.hist-row:last-child { border-bottom: none; }
+.hist-header { color: var(--text-3); font-family: var(--font); font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+.hist-label { color: var(--text-2); font-family: var(--font); }
+.hist-rec  { color: var(--green); }
+.hist-sai  { color: var(--red); }
+.hist-res.g { color: var(--green); }
+.hist-res.r { color: var(--red); }
+.hist-saldo { color: var(--text-1); }
+
+/* Classe de cor utilitária nos modais */
+.g { color: var(--green); }
+.r { color: var(--red); }
+.a { color: var(--amber); }
+.b { color: var(--blue); }
+
+/* Badge */
+.badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-sm); }
+.badge-warn { background: var(--amber-bg); border: 1px solid var(--amber-border); color: var(--amber); }
+
 /* Responsive mínimo */
 @media (max-width: 900px) {
   .inicio-left { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
   #tela-inicio { flex-direction: column; }
   .inicio-right { padding: 32px 24px; }
+  .two-col-grid { grid-template-columns: 1fr; }
 }

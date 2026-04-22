@@ -211,7 +211,7 @@ window.AGENCIA.ui = {
   },
 
   // ----------------------------------------------------------
-  // TELA DO JOGO (skeleton F1)
+  // TELA DO JOGO (F2)
   // ----------------------------------------------------------
   renderTelaJogo: function() {
     const s   = window.AGENCIA.getState();
@@ -281,67 +281,194 @@ window.AGENCIA.ui = {
   },
 
   // ----------------------------------------------------------
-  // Painel de boas-vindas (F1)
+  // Dashboard principal (F2) — overview com log de eventos
   // ----------------------------------------------------------
   _renderBemVindo: function(ag, seg, mod, dif, s) {
+    const log = (s.logDiaAtual && s.logDiaAtual.eventos) || [];
+    const saldoCor = s.caixa.saldo < 200 ? 'r' : s.caixa.saldo < 500 ? 'a' : 'g';
     return `<div class="fade-in">
 
       <div class="section-header">
         <div>
           <div class="section-title">${seg.emoji} ${this._esc(ag.nome)}</div>
-          <div class="section-subtitle">Campanha iniciada · Dia 1 de operação</div>
+          <div class="section-subtitle">Dia ${s.tempo.dia} · Semana ${s.tempo.semana} · Fase Sobrevivência</div>
         </div>
         <div class="phase-badge">⚡ Sobrevivência</div>
       </div>
 
-      <!-- KPIs de início -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Estado Inicial</div>
+      <!-- KPIs rápidos -->
+      <div class="stats-row" style="margin-bottom:16px;">
+        <div class="stat-tile">
+          <div class="stat-tile-label">Caixa</div>
+          <div class="stat-tile-value ${saldoCor}">${this._brl(s.caixa.saldo)}</div>
         </div>
-        <div class="stats-row">
-          <div class="stat-tile">
-            <div class="stat-tile-label">Caixa</div>
-            <div class="stat-tile-value g">${this._brl(s.caixa.saldo)}</div>
-          </div>
-          <div class="stat-tile">
-            <div class="stat-tile-label">Foco</div>
-            <div class="stat-tile-value" style="font-size:15px;">${seg.label}</div>
-          </div>
-          <div class="stat-tile">
-            <div class="stat-tile-label">Modo</div>
-            <div class="stat-tile-value" style="font-size:15px;">${mod.label}</div>
-          </div>
-          <div class="stat-tile">
-            <div class="stat-tile-label">Dificuldade</div>
-            <div class="stat-tile-value a" style="font-size:15px;">${dif.label}</div>
-          </div>
+        <div class="stat-tile">
+          <div class="stat-tile-label">PA Restante</div>
+          <div class="stat-tile-value a">${s.pa.disponivel}/${s.pa.maximo}</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-tile-label">Reputação</div>
+          <div class="stat-tile-value b">${ag.reputacao}/100</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-tile-label">Fadiga</div>
+          <div class="stat-tile-value ${ag.fadiga >= 80 ? 'r' : ag.fadiga >= 50 ? 'a' : ''}"
+            >${Math.round(ag.fadiga)}/100</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-tile-label">Vendas</div>
+          <div class="stat-tile-value">${s.kpis.totalVendas}</div>
         </div>
       </div>
 
-      <!-- Atributos da agência -->
+      <!-- Log de eventos do dia -->
       <div class="card">
         <div class="card-header">
-          <div class="card-title">Atributos da Agência</div>
+          <div class="card-title">Log do Dia ${s.tempo.dia}</div>
+          <button class="btn-sm" onclick="window.AGENCIA.loop.avancarDia();window.AGENCIA.ui.renderizarPainelAtivo()" id="btn-avancar-dia"
+            style="background:var(--blue);border-color:var(--blue);color:#fff;padding:6px 16px;font-weight:700;">
+            Avançar Dia →
+          </button>
         </div>
+        <div class="event-log" id="event-log">
+          ${log.length === 0
+            ? '<div class="log-empty">Nenhuma ação registrada hoje. Use PA para prospectar, qualificar ou fechar negócios.</div>'
+            : log.map(e => `<div class="log-entry log-${e.tipo}">${e.msg}</div>`).join('')
+          }
+        </div>
+      </div>
+
+      <!-- Atributos -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">Atributos da Agência</div></div>
         <div class="attr-row">
-          ${this._attrBar('Reputação',          ag.reputacao,     'b')}
-          ${this._attrBar('Autoridade de Marca', ag.autoridade,    'b')}
+          ${this._attrBar('Reputação',           ag.reputacao,     'b')}
           ${this._attrBar('Eficiência Operac.',  ag.eficienciaOp,  'g')}
           ${this._attrBar('Maturidade Comercial',ag.maturidadeCom, 'g')}
-          ${this._attrBar('Segurança Jurídica',  ag.segurancaJur,  'a')}
           ${this._attrBar('Fadiga do Dono',      ag.fadiga,        'r')}
         </div>
       </div>
 
-      <!-- Banner de status -->
-      <div class="info-banner">
-        <strong>F1 concluída.</strong>
-        Estrutura de dados ✓ &nbsp;·&nbsp; Estado em memória ✓ &nbsp;·&nbsp; Design system ✓ &nbsp;·&nbsp; Tela de início ✓<br>
-        <strong>F2</strong> implementará o game loop diário, pontos de ação, custos fixos e fechamentos semanal/mensal.
-      </div>
-
     </div>`;
+  },
+
+  // ----------------------------------------------------------
+  // Re-renderiza o painel ativo (chamado após avancarDia)
+  // ----------------------------------------------------------
+  renderizarPainelAtivo: function() {
+    const painel = this.painelAtivo;
+    if (!painel) {
+      // Re-render dashboard overview
+      const s   = window.AGENCIA.getState();
+      if (!s) return;
+      const BAL = window.AGENCIA.BAL;
+      const ag  = s.agencia;
+      const seg = BAL.segmentos[ag.segmento];
+      const mod = BAL.modos[ag.modo];
+      const dif = BAL.dificuldades[ag.dificuldade];
+      const mc  = document.getElementById('main-content');
+      if (mc) mc.innerHTML = this._renderBemVindo(ag, seg, mod, dif, s);
+      return;
+    }
+    const map = {
+      caixa:       window.AGENCIA.painelCaixa,
+      comercial:   window.AGENCIA.painelComercial,
+      operacional: window.AGENCIA.painelOperacional,
+      marketing:   window.AGENCIA.painelMarketing,
+      pessoas:     window.AGENCIA.painelPessoas,
+      mercado:     window.AGENCIA.painelMercado,
+    };
+    const mc = document.getElementById('main-content');
+    if (mc && map[painel]) { mc.innerHTML = ''; map[painel].render(mc); }
+  },
+
+  // ----------------------------------------------------------
+  // Modal de fechamento semanal / mensal
+  // ----------------------------------------------------------
+  mostrarModal: function(dados) {
+    // Remove modal anterior se existir
+    const old = document.getElementById('modal-overlay');
+    if (old) old.remove();
+
+    const isMensal = dados.tipo === 'mensal';
+    const resCor   = dados.resultado >= 0 ? 'g' : 'r';
+    const sinal    = dados.resultado >= 0 ? '+' : '';
+
+    const el = document.createElement('div');
+    el.id = 'modal-overlay';
+    el.className = 'modal-overlay';
+    el.innerHTML = `
+      <div class="modal-box fade-in">
+        <div class="modal-header">
+          <div class="modal-tipo">${isMensal ? '📅 BALANÇO MENSAL' : '📊 FECHAMENTO SEMANAL'}</div>
+          <div class="modal-titulo">${dados.titulo}</div>
+        </div>
+        <div class="modal-body">
+          <div class="stats-row">
+            <div class="stat-tile">
+              <div class="stat-tile-label">Receitas</div>
+              <div class="stat-tile-value g">${this._brl(dados.receitas)}</div>
+            </div>
+            <div class="stat-tile">
+              <div class="stat-tile-label">Despesas</div>
+              <div class="stat-tile-value r">${this._brl(dados.despesas)}</div>
+            </div>
+            <div class="stat-tile">
+              <div class="stat-tile-label">Resultado</div>
+              <div class="stat-tile-value ${resCor}">${sinal}${this._brl(dados.resultado)}</div>
+            </div>
+            <div class="stat-tile">
+              <div class="stat-tile-label">Saldo Atual</div>
+              <div class="stat-tile-value">${this._brl(dados.saldo)}</div>
+            </div>
+          </div>
+          <div class="modal-linha">
+            <span>Reputação</span>
+            <span class="${dados.ajusteRep >= 0 ? 'g' : 'r'}">${dados.reputacao}/100 (${dados.ajusteRep >= 0 ? '+' : ''}${dados.ajusteRep || 0})</span>
+          </div>
+          <div class="modal-linha">
+            <span>Fadiga do Dono</span>
+            <span class="${dados.fadiga >= 80 ? 'r' : 'a'}">${Math.round(dados.fadiga)}/100</span>
+          </div>
+          ${isMensal ? `<div class="modal-linha"><span>Total de Vendas</span><span>${dados.totalVendas}</span></div>` : ''}
+        </div>
+        <div class="modal-footer">
+          <button class="btn-start" onclick="document.getElementById('modal-overlay').remove()" style="padding:10px 28px;">Continuar →</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(el);
+    el.addEventListener('click', function(e) {
+      if (e.target === el) el.remove();
+    });
+  },
+
+  // ----------------------------------------------------------
+  // Game Over
+  // ----------------------------------------------------------
+  mostrarGameOver: function(motivo) {
+    const old = document.getElementById('modal-overlay');
+    if (old) old.remove();
+    const el = document.createElement('div');
+    el.id = 'modal-overlay';
+    el.className = 'modal-overlay';
+    el.innerHTML = `
+      <div class="modal-box fade-in" style="border-color:var(--red);">
+        <div class="modal-header" style="border-color:var(--red);">
+          <div class="modal-tipo" style="color:var(--red);">🔴 GAME OVER</div>
+          <div class="modal-titulo">Sua agência encerrou as operações.</div>
+        </div>
+        <div class="modal-body">
+          <p style="color:var(--text-2);font-size:13px;line-height:1.7;margin-bottom:20px;">${motivo}</p>
+          <div class="modal-linha"><span>Total de Vendas</span><span>${window.AGENCIA.getState().kpis.totalVendas}</span></div>
+          <div class="modal-linha"><span>Dias Sobrevividos</span><span>${window.AGENCIA.getState().tempo.dia}</span></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-start" onclick="location.reload()" style="background:var(--red);padding:10px 28px;">Recomeçar</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(el);
   },
 
   // ----------------------------------------------------------
@@ -405,20 +532,30 @@ window.AGENCIA.ui = {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   },
 
-  // Atualiza topbar a partir do estado (chamado em F2)
+  // Atualiza topbar
   atualizarTopbar: function() {
-    const s  = window.AGENCIA.getState();
+    const s = window.AGENCIA.getState();
     if (!s) return;
-    const tp = {
-      'tp-dia':  s.tempo.dia,
+    const ids = {
+      'tp-dia':   s.tempo.dia,
       'tp-caixa': this._brl(s.caixa.saldo),
-      'tp-pa':   `${s.pa.disponivel}/${s.pa.maximo}`,
-      'tp-rep':  s.agencia.reputacao,
+      'tp-pa':    s.pa.disponivel + '/' + s.pa.maximo,
+      'tp-rep':   s.agencia.reputacao,
     };
-    Object.entries(tp).forEach(([id, val]) => {
+    Object.entries(ids).forEach(function([id, val]) {
       const el = document.getElementById(id);
       if (el) el.textContent = val;
     });
+    // Cor dinâmica do caixa
+    const caixaEl = document.getElementById('tp-caixa');
+    if (caixaEl) {
+      caixaEl.className = 'topbar-value ' + (s.caixa.saldo < 0 ? 'v-red' : s.caixa.saldo < 200 ? 'v-amber' : 'v-green');
+    }
+    // Cor dinâmica do PA
+    const paEl = document.getElementById('tp-pa');
+    if (paEl) {
+      paEl.className = 'topbar-value ' + (s.pa.disponivel === 0 ? 'v-red' : s.pa.disponivel <= 2 ? 'v-amber' : 'v-amber');
+    }
   },
 };
 
