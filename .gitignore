@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Local server / tunnels
+cloudflared.exe
+.agent/
+*.log
+
+# Temporary artifacts (unless you want them in the repo)
+# artifacts/

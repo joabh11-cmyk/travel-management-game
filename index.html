@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AGÊNCIA — Simulador de Gestão de Viagens</title>
+  <meta name="description" content="Simule a construção de uma agência de viagens brasileira do zero. Comece com R$ 1.000 e transforme seu negócio — ou quebre tentando.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="app">
+
+    <!-- Tela 1: Início / Configuração -->
+    <div id="tela-inicio" class="tela ativa"></div>
+
+    <!-- Tela 2: Jogo principal -->
+    <div id="tela-jogo" class="tela"></div>
+
+  </div>
+
+  <!-- ── Dados de balanceamento (carregam primeiro) ── -->
+  <script src="data/balanceamento.js"></script>
+  <script src="data/clientes.js"></script>
+  <script src="data/objecoes.js"></script>
+  <script src="data/eventos.js"></script>
+
+  <!-- ── Core engines ── -->
+  <script src="js/state.js"></script>
+  <script src="js/economy.js"></script>
+  <script src="js/clientAI.js"></script>
+  <script src="js/leads.js"></script>
+  <script src="js/pipeline.js"></script>
+  <script src="js/events.js"></script>
+  <script src="js/gameLoop.js"></script>
+
+  <!-- ── Painéis ── -->
+  <script src="paineis/caixa.js"></script>
+  <script src="paineis/comercial.js"></script>
+  <script src="paineis/operacional.js"></script>
+  <script src="paineis/marketing.js"></script>
+  <script src="paineis/pessoas.js"></script>
+  <script src="paineis/mercado.js"></script>
+
+  <!-- ── UI e save (últimos) ── -->
+  <script src="js/ui.js"></script>
+  <script src="js/save.js"></script>
+
+</body>
+</html>
