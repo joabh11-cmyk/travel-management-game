@@ -4,26 +4,38 @@ window.AGENCIA = window.AGENCIA || {};
 window.AGENCIA.chatSimulator = (function() {
 
   async function iniciarChat(lead, cotacao, agencia, apiKey) {
-    const BAL = window.AGENCIA.BAL;
+    if (!apiKey || apiKey.trim() === '') {
+      throw new Error("API Key não encontrada. Configure na tela inicial.");
+    }
+
     const systemPrompt = window.AGENCIA.data.promptsClientes.getSystemPrompt(lead.perfil, lead, cotacao, agencia);
     
     const sessao = {
       lead,
       cotacao,
-      historico: [{ role: 'system', content: systemPrompt }],
+      systemPrompt: systemPrompt,
+      historico: [], // Apenas mensagens user/model
       turnoAtual: 0,
       scoreAcumulado: 0,
       encerrado: false,
       decisaoPrevia: null
     };
 
-    // Gera a primeira mensagem do cliente automaticamente
+    // Para gerar a primeira mensagem, enviamos um prompt invisível do "sistema" via user role
+    const promptAbertura = {
+      role: 'user',
+      parts: [{
+        text: 'Inicie a conversa agora com sua mensagem de abertura, como se você acabasse de receber a proposta do agente.'
+      }]
+    };
+
     try {
-      const primeiraMensagem = await _chamadaGemini(sessao.historico, apiKey);
-      sessao.historico.push({ role: 'assistant', content: primeiraMensagem });
+      const primeiraMensagem = await _chamadaGemini(sessao.systemPrompt, [promptAbertura], apiKey);
+      // Salva no histórico real da sessão
+      sessao.historico.push({ role: 'model', content: primeiraMensagem });
       return sessao;
     } catch (err) {
-      console.error("Erro ao iniciar chat:", err);
+      console.error("[ChatSimulator] Erro ao iniciar chat:", err);
       throw err;
     }
   }
@@ -31,11 +43,20 @@ window.AGENCIA.chatSimulator = (function() {
   async function enviarMensagem(sessao, mensagemJogador, apiKey) {
     if (sessao.encerrado) return;
 
+    // Adiciona mensagem do jogador ao histórico
     sessao.historico.push({ role: 'user', content: mensagemJogador });
     
+    // Converte histórico para formato Gemini (roles 'user' e 'model')
+    const historicoFormatado = sessao.historico.map(m => ({
+      role: m.role, // Já usamos 'user' e 'model' internamente agora
+      parts: [{ text: m.content }]
+    }));
+
     try {
-      const respostaCliente = await _chamadaGemini(sessao.historico, apiKey);
-      sessao.historico.push({ role: 'assistant', content: respostaCliente });
+      const respostaCliente = await _chamadaGemini(sessao.systemPrompt, historicoFormatado, apiKey);
+      
+      // Adiciona resposta do cliente ao histórico
+      sessao.historico.push({ role: 'model', content: respostaCliente });
       
       const avaliacao = window.AGENCIA.clientAI.avaliarTurno(sessao, mensagemJogador, respostaCliente);
       sessao.turnoAtual++;
@@ -53,7 +74,7 @@ window.AGENCIA.chatSimulator = (function() {
         encerrado: sessao.encerrado
       };
     } catch (err) {
-      console.error("Erro ao enviar mensagem:", err);
+      console.error("[ChatSimulator] Erro ao enviar mensagem:", err);
       throw err;
     }
   }
@@ -62,31 +83,26 @@ window.AGENCIA.chatSimulator = (function() {
     return window.AGENCIA.clientAI.decisaoFinal(sessao);
   }
 
-  async function _chamadaGemini(historico, apiKey) {
+  async function _chamadaGemini(systemPrompt, contents, apiKey) {
+    if (!contents || contents.length === 0) {
+      console.error('[ChatSimulator] contents vazio — chamada abortada');
+      throw new Error("Histórico de mensagens vazio.");
+    }
+
     const BAL = window.AGENCIA.BAL;
-    const model = BAL.chatSimulator.modeloGemini;
+    const model = BAL.chatSimulator?.modeloGemini || "gemini-1.5-flash";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-    // Converte histórico para formato Gemini
-    const contents = historico.filter(m => m.role !== 'system').map(m => ({
-      role: m.role === 'user' ? 'user' : 'model',
-      parts: [{ text: m.content }]
-    }));
-
-    // Injeta o system prompt na primeira mensagem se necessário ou usa o campo system_instruction se suportado
-    const systemInstruction = historico.find(m => m.role === 'system')?.content;
-
     const body = {
+      system_instruction: {
+        parts: [{ text: systemPrompt }]
+      },
       contents: contents,
       generationConfig: {
-        temperature: BAL.chatSimulator.temperaturaGemini,
-        maxOutputTokens: BAL.chatSimulator.maxTokensResposta,
+        temperature: BAL.chatSimulator?.temperaturaGemini ?? 0.85,
+        maxOutputTokens: BAL.chatSimulator?.maxTokensResposta ?? 150,
       }
     };
-
-    if (systemInstruction) {
-      body.system_instruction = { parts: [{ text: systemInstruction }] };
-    }
 
     const response = await fetch(url, {
       method: 'POST',
@@ -100,6 +116,11 @@ window.AGENCIA.chatSimulator = (function() {
     }
 
     const data = await response.json();
+    
+    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+      throw new Error("Resposta inválida da API (vazio)");
+    }
+
     return data.candidates[0].content.parts[0].text;
   }
 

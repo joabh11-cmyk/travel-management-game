@@ -944,7 +944,7 @@ window.AGENCIA.ui = {
       msgArea.innerHTML = '';
       
       // Renderiza a primeira mensagem do cliente
-      const primeiraMsg = sessao.historico.find(m => m.role === 'assistant');
+      const primeiraMsg = sessao.historico.find(m => m.role === 'model');
       if (primeiraMsg) {
         this._addChatBubble('cliente', primeiraMsg.content);
       }
