@@ -90,9 +90,10 @@ window.AGENCIA.chatSimulator = (function() {
     }
 
     const BAL = window.AGENCIA.BAL;
-    const model = BAL.chatSimulator?.modeloGemini || "gemini-2.0-flash-lite";
+    const model = 'gemini-2.0-flash'; // Modelo definitivo
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
+    console.log('[ChatSimulator] usando modelo: gemini-2.0-flash');
     console.log('[ChatSimulator] endpoint:', url);
 
     const body = {
