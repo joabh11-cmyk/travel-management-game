@@ -434,7 +434,7 @@ window.AGENCIA.ui = {
           <div class="modal-tipo">${isMensal ? '📅 BALANÇO MENSAL' : '📊 FECHAMENTO SEMANAL'}</div>
           <div class="modal-titulo">${dados.titulo}</div>
         </div>
-        <div class="modal-body">
+        <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
           <div class="stats-row" style="margin-bottom:14px;">
             <div class="stat-tile">
               <div class="stat-tile-label">Receitas</div>
@@ -508,7 +508,7 @@ window.AGENCIA.ui = {
           <div class="modal-tipo" style="color:var(--amber);">⚠️ EVENTO DE MERCADO</div>
           <div class="modal-titulo">${evento.titulo}</div>
         </div>
-        <div class="modal-body">
+        <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
           <p style="color:var(--text-2);font-size:14px;line-height:1.6;margin-bottom:20px;">
             ${evento.mensagem.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}
           </p>
