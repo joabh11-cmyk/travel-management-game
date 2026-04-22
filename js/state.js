@@ -28,6 +28,14 @@ window.AGENCIA.iniciarJogo = function(config) {
       maturidadeCom:    ei.maturidadeCom,
       fadiga:           ei.fadiga,
       fase:             ei.fase,
+      diasReputacaoCritica: 0,
+      protecaoJuridica: {
+        planoAtivo: null,        // null | 'basico' | 'completo'
+        usosSemanaAtual: 0,
+        usosSemanaMax: 0,
+        diaContratacao: null,
+        proximaCobranca: null
+      }
     },
 
     // --- Tempo ---
@@ -51,7 +59,13 @@ window.AGENCIA.iniciarJogo = function(config) {
     canaisMarketing: {
       familiares_amigos: 'medio',
       boca_a_boca: 'medio',
-      campanhas_internas: 'medio'
+      campanhas_internas: 'medio',
+      influenciadores: 'desligado',
+      participacao_eventos: 'desligado',
+      representantes: 'desligado',
+      patrocinio: 'desligado',
+      venda_corporativa: 'desligado',
+      trafego_pago: 'desligado'
     },
 
     // --- Pipeline comercial ---

@@ -1,7 +1,37 @@
-// paineis/pessoas.js — F8
-window.AGENCIA = window.AGENCIA || {};
+  contratarPlanoJuridico: function(planoId) {
+    const s = window.AGENCIA.getState();
+    const BAL = window.AGENCIA.BAL;
+    const plano = BAL.protecaoJuridica.planos[planoId];
+    if (!plano) return;
+    
+    if (s.caixa.saldo < plano.valorMensal) {
+      window.AGENCIA.loop.logEvento(s, 'erro', 'Caixa insuficiente para o primeiro mês da assinatura jurídica.');
+      return;
+    }
+    
+    s.agencia.protecaoJuridica.planoAtivo = planoId;
+    s.agencia.protecaoJuridica.usosSemanaMax = plano.usosPorSemana;
+    s.agencia.protecaoJuridica.diaContratacao = s.tempo.dia;
+    s.agencia.protecaoJuridica.proximaCobranca = s.tempo.dia + 30;
+    
+    // Primeiro débito
+    s.caixa.saldo -= plano.valorMensal;
+    s.caixa.despesas += plano.valorMensal;
+    window.AGENCIA.registrarSaida(`Contratação Jurídica: ${plano.nome}`, plano.valorMensal, 'fixo');
+    
+    window.AGENCIA.ui.renderizarPainelAtivo('pessoas');
+    window.AGENCIA.loop.logEvento(s, 'sucesso', `🛡️ Plano "${plano.nome}" contratado! Usos por semana: ${plano.usosPorSemana}.`);
+  },
 
-window.AGENCIA.painelPessoas = {
+  cancelarPlanoJuridico: function() {
+    const s = window.AGENCIA.getState();
+    if (!confirm('Deseja realmente cancelar sua proteção jurídica? Você ficará exposto a multas integrais em caso de processos.')) return;
+    
+    s.agencia.protecaoJuridica.planoAtivo = null;
+    s.agencia.protecaoJuridica.usosSemanaMax = 0;
+    window.AGENCIA.ui.renderizarPainelAtivo('pessoas');
+    window.AGENCIA.loop.logEvento(s, 'aviso', `🛡️ Proteção Jurídica cancelada.`);
+  },
 
   render: function(container) {
     const s   = window.AGENCIA.getState();
@@ -12,6 +42,7 @@ window.AGENCIA.painelPessoas = {
     const paMax    = s.pa.maximo;
     const paUsados = s.pa.usados;
     const leadsAtivos = (s.leads || []).length + (s.pipeline || []).length;
+    const jur = s.agencia.protecaoJuridica || {};
 
     // Cálculo de sobrecarga
     let sobrecargaLabel, sobrecargaColor;
@@ -23,133 +54,77 @@ window.AGENCIA.painelPessoas = {
     // Eficiência operacional
     const eficiencia = paMax > 0 ? Math.round((paUsados / paMax) * 100) : 0;
 
-    // Recomendação de contratação
-    let recomendacao, recomendacaoIcon;
-    if (leadsAtivos > 8) {
-      recomendacao = 'Volume de leads alto. Considere contratar um assistente comercial para atender a demanda sem perder conversão.';
-      recomendacaoIcon = '🔴';
-    } else if (fadiga >= 80) {
-      recomendacao = 'Sua fadiga está alta. Um assistente operacional reduziria a sobrecarga e liberaria PA para vendas.';
-      recomendacaoIcon = '🟡';
-    } else if (leadsAtivos > 5) {
-      recomendacao = 'Operação próxima do limite solo. Observe o volume de leads nas próximas semanas.';
-      recomendacaoIcon = '🟡';
-    } else {
-      recomendacao = 'Operando dentro da capacidade. Continue assim e considere expandir quando o volume de leads dobrar.';
-      recomendacaoIcon = '🟢';
-    }
-
-    // Custo de equipe (por enquanto zero — estrutura solo)
-    const custoEquipe = 0;
-
     container.innerHTML = `
       <div class="fade-in">
         <div class="section-header">
           <div>
             <div class="section-title">👥 Pessoas & Capacidade</div>
-            <div class="section-subtitle">Dia ${s.tempo.dia} · Operação solo</div>
+            <div class="section-subtitle">Dia ${s.tempo.dia} · Gestão de Equipe e Serviços</div>
           </div>
         </div>
 
-        <!-- Status atual -->
-        <div class="card" style="margin-bottom:16px;">
-          <div class="card-header">
-            <div class="card-title">Situação Atual da Equipe</div>
-            <span class="badge" style="background:rgba(99,102,241,.15);color:#818cf8;">Solo</span>
-          </div>
-          <div style="padding: 16px 0 8px;">
-            <div style="font-size:14px; color:var(--text); margin-bottom:6px;">
-              🧑 <strong>Você</strong> — Fundador & Único Operador
-            </div>
-            <div style="font-size:13px; color:var(--text-2); line-height:1.6;">
-              Está acumulando as funções de prospectador, consultor de vendas, cotador, suporte ao cliente e gestor financeiro.
-              Isso é normal na fase de Sobrevivência — mas tem custo real de fadiga.
-            </div>
-          </div>
-        </div>
-
-        <!-- Métricas de capacidade -->
+        <!-- Saúde e PA -->
         <div class="two-col-grid" style="margin-bottom:16px;">
           <div class="card">
-            <div class="card-header"><div class="card-title">Capacidade Diária</div></div>
+            <div class="card-header"><div class="card-title">Energia do Fundador (PA)</div></div>
             <div class="stats-row" style="margin-top:8px;">
               <div class="stat-tile">
-                <div class="stat-tile-label">PA / Dia</div>
-                <div class="stat-tile-value b">${paMax}</div>
+                <div class="stat-tile-label">PA Disponível</div>
+                <div class="stat-tile-value b">${paMax - paUsados}</div>
               </div>
               <div class="stat-tile">
-                <div class="stat-tile-label">PA Usados Hoje</div>
-                <div class="stat-tile-value ${paUsados >= paMax ? 'r' : 'g'}">${paUsados}</div>
-              </div>
-              <div class="stat-tile">
-                <div class="stat-tile-label">Intensidade</div>
-                <div class="stat-tile-value ${eficiencia >= 80 ? 'r' : eficiencia >= 60 ? '' : 'g'}">${eficiencia}%</div>
+                <div class="stat-tile-label">Fadiga</div>
+                <div class="stat-tile-value" style="color:${sobrecargaColor}">${fadiga}%</div>
               </div>
             </div>
+            <div style="font-size:11px; color:var(--text-3); margin-top:10px;">${sobrecargaLabel}</div>
           </div>
+
           <div class="card">
-            <div class="card-header"><div class="card-title">Saúde do Operador</div></div>
-            <div style="padding-top:10px;">
-              <div style="font-size:13px; color:var(--text-2); margin-bottom:10px;">Fadiga Acumulada</div>
-              <div style="background:var(--surface-2); border-radius:6px; height:10px; overflow:hidden; margin-bottom:8px;">
-                <div style="width:${fadiga}%; height:100%; background:${fadiga>=80?'var(--red)':fadiga>=50?'var(--amber)':'var(--green)'}; transition:width 0.3s;"></div>
-              </div>
-              <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-2);">
-                <span>${fadiga}/100</span>
-                <span style="color:${sobrecargaColor}; font-weight:600;">${sobrecargaLabel}</span>
-              </div>
+            <div class="card-header">
+              <div class="card-title">🛡️ Proteção Jurídica</div>
+              ${jur.planoAtivo ? `<span class="badge" style="background:rgba(34,197,94,.1);color:#22c55e;">ATIVO</span>` : '<span class="badge" style="background:rgba(239,68,68,.1);color:#ef4444;">DESPROTEGIDO</span>'}
             </div>
-          </div>
-        </div>
-
-        <!-- Custo atual de equipe -->
-        <div class="card" style="margin-bottom:16px;">
-          <div class="card-header">
-            <div class="card-title">Custo de Equipe</div>
-          </div>
-          <div class="stats-row" style="margin-top:8px;">
-            <div class="stat-tile">
-              <div class="stat-tile-label">Folha Mensal</div>
-              <div class="stat-tile-value g">R$ 0,00</div>
-            </div>
-            <div class="stat-tile">
-              <div class="stat-tile-label">Custo por Lead Atendido</div>
-              <div class="stat-tile-value">R$ 0,00</div>
-            </div>
-            <div class="stat-tile">
-              <div class="stat-tile-label">Leads Ativos Agora</div>
-              <div class="stat-tile-value ${leadsAtivos > 8 ? 'r' : leadsAtivos > 5 ? 'a' : 'b'}">${leadsAtivos}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Recomendação -->
-        <div class="card" style="border-color:${recomendacaoIcon === '🔴' ? 'var(--red)' : recomendacaoIcon === '🟡' ? 'var(--amber)' : 'var(--border)'};">
-          <div class="card-header">
-            <div class="card-title">${recomendacaoIcon} Diagnóstico Operacional</div>
-          </div>
-          <p style="font-size:13px; color:var(--text-2); line-height:1.7; margin:10px 0 4px;">${recomendacao}</p>
-        </div>
-
-        <!-- Estrutura futura -->
-        <div class="card" style="border-style:dashed; margin-top:16px;">
-          <div class="card-header">
-            <div class="card-title" style="color:var(--text-2);">🔒 Contratações Futuras (Desbloqueadas por fase)</div>
-          </div>
-          <div style="padding-top:8px;">
-            ${[
-              { cargo: 'Assistente Comercial', tipo: 'Estagiário (CLT)', salario: 'R$ 1.500/mês', requisito: 'Fase Tração · 8+ leads/dia', cor: '#818cf8' },
-              { cargo: 'Consultor de Viagens', tipo: 'PJ ou CLT', salario: 'R$ 2.500–4.000/mês', requisito: 'Fase Organização · 15+ leads/dia', cor: '#22c55e' },
-              { cargo: 'Gestor Operacional',  tipo: 'CLT', salario: 'R$ 4.000–6.000/mês', requisito: 'Fase Escala · 3+ consultores', cor: '#fb923c' },
-            ].map(c => `
-              <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
-                <div>
-                  <div style="font-size:13px; font-weight:700; color:var(--text-2);">${c.cargo}</div>
-                  <div style="font-size:12px; color:var(--text-2); margin-top:2px;">${c.tipo} · ${c.salario}</div>
+            <div style="margin-top:10px;">
+              ${jur.planoAtivo ? `
+                <div style="font-size:13px; color:var(--text);">Plano: <strong>${BAL.protecaoJuridica.planos[jur.planoAtivo].nome}</strong></div>
+                <div style="font-size:12px; color:var(--text-2); margin-top:4px;">Usos na semana: ${jur.usosSemanaAtual} / ${jur.usosSemanaMax}</div>
+                <button class="btn btn-danger" style="margin-top:12px; width:100%; padding:6px;" onclick="window.AGENCIA.painelPessoas.cancelarPlanoJuridico()">Cancelar Assinatura</button>
+              ` : `
+                <div style="font-size:12px; color:var(--text-3); margin-bottom:10px;">Você está exposto a multas judiciais de até R$ 1.500 por incidente.</div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                  <button class="btn btn-secondary" style="font-size:11px; padding:6px;" onclick="window.AGENCIA.painelPessoas.contratarPlanoJuridico('basico')">Básico (R$ 250/m)</button>
+                  <button class="btn btn-primary" style="font-size:11px; padding:6px;" onclick="window.AGENCIA.painelPessoas.contratarPlanoJuridico('completo')">Completo (R$ 350/m)</button>
                 </div>
-                <span style="font-size:11px; padding:3px 8px; border-radius:4px; background:rgba(99,102,241,.1); color:${c.cor};">${c.requisito}</span>
-              </div>
-            `).join('')}
+              `}
+            </div>
+          </div>
+        </div>
+
+        <!-- Estrutura Solo -->
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-header"><div class="card-title">Equipe Atual</div></div>
+          <div style="padding:10px 0;">
+             <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="font-size:13px; color:var(--text);">🧑 <strong>Você (Fundador)</strong></div>
+                <span class="badge">Ativo</span>
+             </div>
+             <p style="font-size:12px; color:var(--text-3); margin-top:5px; line-height:1.5;">Gerenciando marketing, vendas, operacional e financeiro de forma centralizada.</p>
+          </div>
+        </div>
+
+        <!-- Próximos Passos -->
+        <div class="card" style="border-style:dashed; opacity:0.8;">
+          <div class="card-header"><div class="card-title" style="color:var(--text-2);">🔒 Contratações (Bloqueadas por Fase)</div></div>
+          <div style="padding-top:10px;">
+            <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-3); padding:8px 0; border-bottom:1px solid var(--border);">
+               <span>Assistente Comercial</span>
+               <span>Req: Fase Tração</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-3); padding:8px 0; border-bottom:1px solid var(--border);">
+               <span>Consultor de Viagens</span>
+               <span>Req: Fase Organização</span>
+            </div>
           </div>
         </div>
       </div>

@@ -172,7 +172,76 @@ window.AGENCIA.events = (function() {
     // Remove dos pendentes
     s.eventosPendentes.splice(idx, 1);
 
+    // --- Disparo de Processo Jurídico (F8) ---
+    // Se o evento for grave (reputação caiu muito) ou não resolvido, chance de virar processo
+    const eventosGrave = ['reclamacao_pos_venda', 'desconto_agressivo_cliente', 'concorrente_mais_barato', 'mudanca_tarifa_durante_negociacao'];
+    if (eventosGrave.includes(evento.configId) && imp.deltaReputacao <= -5) {
+       // Chance de 40% de virar processo se a reputação caiu muito
+       if (Math.random() < 0.4) {
+          _dispararProcessoJuridico(evento, s);
+       }
+    }
+
     return true;
+  }
+
+  function _dispararProcessoJuridico(eventoOrigem, s) {
+    const BAL = window.AGENCIA.BAL;
+    const jur = s.agencia.protecaoJuridica;
+    const configOrigem = eventoOrigem.configId;
+    
+    let custoCaixa = 0;
+    let custoRep = 0;
+    let mensagem = "";
+    let tipoLog = 'erro';
+
+    const multaBase = BAL.protecaoJuridica.semProtecao.multaBase.min + Math.random() * (BAL.protecaoJuridica.semProtecao.multaBase.max - BAL.protecaoJuridica.semProtecao.multaBase.min);
+    const repBase = BAL.protecaoJuridica.semProtecao.danoReputacaoBase.min + Math.random() * (BAL.protecaoJuridica.semProtecao.danoReputacaoBase.max - BAL.protecaoJuridica.semProtecao.danoReputacaoBase.min);
+
+    const temPlano = jur && jur.planoAtivo;
+    const planoCfg = temPlano ? BAL.protecaoJuridica.planos[jur.planoAtivo] : null;
+    const coberto = planoCfg && planoCfg.cobertura.includes(configOrigem);
+    const temUsos = temPlano && jur.usosSemanaAtual < jur.usosSemanaMax;
+
+    if (temPlano && coberto && temUsos) {
+      // Caso A: Protegido e com uso
+      jur.usosSemanaAtual++;
+      custoCaixa = 50 + Math.random() * 100;
+      custoRep = 1 + Math.random() * 2;
+      mensagem = `🛡️ Sua proteção jurídica foi acionada para o caso "${eventoOrigem.titulo}". O processo foi encerrado administrativamente com custo mínimo.`;
+      tipoLog = 'sucesso';
+    } else if (temPlano && coberto && !temUsos) {
+      // Caso B: Protegido mas sem uso na semana
+      custoCaixa = multaBase * 0.5;
+      custoRep = 5 + Math.random() * 5;
+      mensagem = `⚠️ Você já usou todos os acionamentos jurídicos desta semana. O caso "${eventoOrigem.titulo}" teve cobertura parcial da multa.`;
+      tipoLog = 'aviso';
+    } else {
+      // Caso C: Sem proteção ou não coberto
+      custoCaixa = multaBase;
+      custoRep = repBase;
+      mensagem = `⚖️ PROCESSO JUDICIAL: Sem proteção jurídica adequada para "${eventoOrigem.titulo}", você arcou com o custo total do processo e danos à imagem.`;
+      tipoLog = 'erro';
+    }
+
+    // Aplica impactos
+    s.caixa.saldo -= custoCaixa;
+    s.caixa.despesas += custoCaixa;
+    s.agencia.reputacao = Math.max(0, s.agencia.reputacao - custoRep);
+    
+    window.AGENCIA.registrarSaida('Processo Jurídico', custoCaixa, 'variavel');
+    window.AGENCIA.loop.logEvento(s, tipoLog, mensagem);
+
+    // Adiciona ao histórico de eventos como um evento passivo resolvido
+    if (!s.historicoEventos) s.historicoEventos = [];
+    s.historicoEventos.push({
+      dia: s.tempo.dia,
+      tipo: 'processo_juridico',
+      titulo: 'Processo Jurídico',
+      resolucao: 'Finalizado',
+      impactoReputacao: -custoRep,
+      impactoCaixa: -custoCaixa
+    });
   }
 
   return {

@@ -28,6 +28,28 @@ window.AGENCIA.leads = (function() {
     return chaves[0]; // fallback
   }
 
+  function isCanalDesbloqueado(cId, s) {
+    const BAL = window.AGENCIA.BAL;
+    const ag = s.agencia;
+    const cfg = BAL.canais[cId];
+    if (!cfg) return false;
+    if (cfg.disponivelDia1) return true;
+
+    // Fase TRAÇÃO (desbloquear quando: caixa > 3.000 ou reputação > 30)
+    const faseTracao = ['influenciadores', 'participacao_eventos', 'trafego_pago'];
+    if (faseTracao.includes(cId)) {
+      return (s.caixa.saldo >= 3000 || ag.reputacao >= 30);
+    }
+
+    // Fase ORGANIZAÇÃO (caixa > 8.000 ou reputação > 55)
+    const faseOrganizacao = ['representantes', 'patrocinio', 'venda_corporativa'];
+    if (faseOrganizacao.includes(cId)) {
+      return (s.caixa.saldo >= 8000 || ag.reputacao >= 55);
+    }
+
+    return true; // Fallback
+  }
+
   // Gera leads do dia com base nos canais ativos, sazonalidade, dificuldade, modo
   function gerarLeadsDia() {
     const s = window.AGENCIA.getState();
@@ -42,7 +64,11 @@ window.AGENCIA.leads = (function() {
 
     let leadsGeradosHoje = 0;
 
-    s.canaisAtivos.forEach(canalId => {
+    const todosCanais = Object.keys(BAL.canais);
+    todosCanais.forEach(canalId => {
+      // 1. Verifica se está desbloqueado
+      if (!isCanalDesbloqueado(canalId, s)) return;
+
       const canal = BAL.canais[canalId];
       if (!canal) return;
 
@@ -112,6 +138,14 @@ window.AGENCIA.leads = (function() {
       status: 'novo'
     };
 
+    // Lead corporativo
+    if (canalId === 'venda_corporativa') {
+      lead.isCorporativo = true;
+      lead.multiplicadorTicket = 2.5 + Math.random() * 1.5;
+      const corpPerfis = ['detalhista', 'apressado'];
+      lead.perfil = corpPerfis[Math.floor(Math.random() * corpPerfis.length)];
+    }
+
     s.leads.push(lead);
   }
 
@@ -141,7 +175,8 @@ window.AGENCIA.leads = (function() {
 
   return {
     gerarLeadsDia,
-    expirarLeadsDia
+    expirarLeadsDia,
+    isCanalDesbloqueado
   };
 
 })();

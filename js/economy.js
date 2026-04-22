@@ -70,7 +70,10 @@ window.AGENCIA.economy = (function() {
     window.AGENCIA.registrarSaida('Custos fixos diários', custoFixoDia, 'fixo');
 
     // 1.1 Custo de Marketing / Captação (F8)
-    let custoMktTotal = 0;
+    let custoMktOrganico = 0;
+    let custoMktSemi     = 0;
+    let custoMktPago     = 0;
+
     if (s.agencia.canaisMarketing) {
       if (!s.kpis.custoMarketingPorCanal) s.kpis.custoMarketingPorCanal = {};
       for (let cId in s.agencia.canaisMarketing) {
@@ -78,15 +81,45 @@ window.AGENCIA.economy = (function() {
         const cfg = BAL.canais[cId];
         if (cfg && cfg.custoPorIntensidade) {
           const c = cfg.custoPorIntensidade[int] || 0;
-          custoMktTotal += c;
-          s.kpis.custoMarketingPorCanal[cId] = (s.kpis.custoMarketingPorCanal[cId] || 0) + c;
+          if (c > 0) {
+            if (cfg.tipo === 'organico') custoMktOrganico += c;
+            else if (cfg.tipo === 'semi') custoMktSemi += c;
+            else if (cfg.tipo === 'pago') custoMktPago += c;
+            s.kpis.custoMarketingPorCanal[cId] = (s.kpis.custoMarketingPorCanal[cId] || 0) + c;
+          }
         }
       }
     }
-    if (custoMktTotal > 0) {
-      s.caixa.saldo -= custoMktTotal;
-      s.caixa.despesas += custoMktTotal;
-      window.AGENCIA.registrarSaida('Marketing / Captação', custoMktTotal, 'marketing');
+    if (custoMktOrganico > 0) {
+      s.caixa.saldo -= custoMktOrganico; s.caixa.despesas += custoMktOrganico;
+      window.AGENCIA.registrarSaida('Marketing Orgânico', custoMktOrganico, 'marketing');
+    }
+    if (custoMktSemi > 0) {
+      s.caixa.saldo -= custoMktSemi; s.caixa.despesas += custoMktSemi;
+      window.AGENCIA.registrarSaida('Marketing Semi-orgânico', custoMktSemi, 'marketing');
+    }
+    if (custoMktPago > 0) {
+      s.caixa.saldo -= custoMktPago; s.caixa.despesas += custoMktPago;
+      window.AGENCIA.registrarSaida('Marketing Pago', custoMktPago, 'marketing');
+    }
+
+    // 1.2 Proteção Jurídica (F8)
+    const jur = s.agencia.protecaoJuridica;
+    if (jur && jur.planoAtivo && jur.proximaCobranca === diaAtual) {
+      const planoCfg = BAL.protecaoJuridica.planos[jur.planoAtivo];
+      if (planoCfg) {
+        if (s.caixa.saldo >= planoCfg.valorMensal) {
+          s.caixa.saldo -= planoCfg.valorMensal;
+          s.caixa.despesas += planoCfg.valorMensal;
+          jur.proximaCobranca = diaAtual + 30;
+          window.AGENCIA.registrarSaida(`Assinatura Jurídica: ${planoCfg.nome}`, planoCfg.valorMensal, 'fixo');
+          window.AGENCIA.loop.logEvento(s, 'info', `🛡️ Proteção Jurídica renovada (R$ ${planoCfg.valorMensal}).`);
+        } else {
+          jur.planoAtivo = null;
+          jur.usosSemanaMax = 0;
+          window.AGENCIA.loop.logEvento(s, 'erro', `🚨 Proteção Jurídica cancelada por falta de saldo.`);
+        }
+      }
     }
 
     // 2. Processar Receitas Agendadas para o dia atual

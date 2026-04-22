@@ -230,6 +230,11 @@ window.AGENCIA.loop = (function() {
       saldoFinal: s.caixa.saldo,
     });
 
+    // Reset de proteção jurídica (F8)
+    if (s.agencia.protecaoJuridica) {
+      s.agencia.protecaoJuridica.usosSemanaAtual = 0;
+    }
+
     return {
       tipo:             'semanal',
       titulo:           `Semana ${semana} — Fechamento`,

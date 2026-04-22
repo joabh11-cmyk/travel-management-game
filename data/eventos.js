@@ -179,5 +179,21 @@ window.AGENCIA.data.eventos = [
         }
       }
     ]
+  },
+  {
+    id: 'processo_juridico',
+    tipo: 'operacional',
+    probBase: 0, 
+    modificadores: { reputacaoAlta: 0, reputacaoBaixa: 0, segurancaJurAlta: 0 },
+    perfisMaisProvaveis: [],
+    gerarTitulo: () => `Processo Jurídico Recebido`,
+    gerarMensagem: (contexto) => `Um cliente decidiu judicializar uma questão anterior.`,
+    opcoes: [
+      {
+        id: 'finalizar',
+        label: 'Encerrar processo',
+        impactos: { deltaCaixa: 0, deltaReputacao: 0 }
+      }
+    ]
   }
 ];

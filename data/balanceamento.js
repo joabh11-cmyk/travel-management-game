@@ -204,7 +204,7 @@ window.AGENCIA.BAL = {
       label:          'Campanhas Internas',
       emoji:          '📣',
       tipo:           'organico',
-      custoPorIntensidade: { desligado: 0, baixo: 2, medio: 5, alto: 15 }, // custo diário
+      custoPorIntensidade: { desligado: 0, baixo: 2, medio: 5, alto: 15 },
       faixasLeads: {
         desligado: { min: 0, max: 0 },
         baixo:     { min: 0.2, max: 0.5 },
@@ -219,30 +219,90 @@ window.AGENCIA.BAL = {
       label:          'Influenciadores',
       emoji:          '📱',
       tipo:           'pago',
-      custoMensal:    800,
-      leadsDia:       { min: 1.5, max: 3.5 },
-      confianca:      { min: 20, max: 40 },
+      custoPorIntensidade: { desligado: 0, baixo: 50, medio: 120, alto: 250 },
+      faixasLeads: {
+        desligado: { min: 0, max: 0 },
+        baixo:     { min: 0.8, max: 1.5 },
+        medio:     { min: 1.5, max: 3.0 },
+        alto:      { min: 3.0, max: 5.0 }
+      },
+      confianca:      { min: 35, max: 45 },
       maturacao:      5,
+      disponivelDia1: false,
+    },
+    participacao_eventos: {
+      label:          'Eventos e Feiras',
+      emoji:          '🎪',
+      tipo:           'semi',
+      custoPorIntensidade: { desligado: 0, baixo: 80, medio: 200, alto: 400 },
+      faixasLeads: {
+        desligado: { min: 0, max: 0 },
+        baixo:     { min: 0.5, max: 1.2 },
+        medio:     { min: 1.2, max: 2.5 },
+        alto:      { min: 2.5, max: 4.5 }
+      },
+      confianca:      { min: 55, max: 65 },
+      maturacao:      1,
+      disponivelDia1: false,
+    },
+    representantes: {
+      label:          'Representantes',
+      emoji:          '💼',
+      tipo:           'semi',
+      custoPorIntensidade: { desligado: 0, baixo: 30, medio: 70, alto: 130 },
+      faixasLeads: {
+        desligado: { min: 0, max: 0 },
+        baixo:     { min: 0.4, max: 0.9 },
+        medio:     { min: 0.9, max: 1.8 },
+        alto:      { min: 1.8, max: 3.0 }
+      },
+      confianca:      { min: 50, max: 60 },
+      maturacao:      7,
+      disponivelDia1: false,
+    },
+    patrocinio: {
+      label:          'Patrocínio',
+      emoji:          '🏆',
+      tipo:           'pago',
+      custoPorIntensidade: { desligado: 0, baixo: 150, medio: 350, alto: 700 },
+      faixasLeads: {
+        desligado: { min: 0, max: 0 },
+        baixo:     { min: 0.3, max: 0.8 },
+        medio:     { min: 0.8, max: 2.0 },
+        alto:      { min: 2.0, max: 4.0 }
+      },
+      confianca:      { min: 45, max: 55 },
+      maturacao:      14,
+      disponivelDia1: false,
+    },
+    venda_corporativa: {
+      label:          'Venda Corporativa',
+      emoji:          '🤝',
+      tipo:           'semi',
+      custoPorIntensidade: { desligado: 0, baixo: 40, medio: 100, alto: 180 },
+      faixasLeads: {
+        desligado: { min: 0, max: 0 },
+        baixo:     { min: 0.2, max: 0.5 },
+        medio:     { min: 0.5, max: 1.0 },
+        alto:      { min: 1.0, max: 2.0 }
+      },
+      confianca:      { min: 60, max: 75 },
+      maturacao:      14,
       disponivelDia1: false,
     },
     trafego_pago: {
       label:          'Tráfego Pago',
       emoji:          '📊',
       tipo:           'pago',
-      custoMensal:    500,
-      leadsDia:       { min: 2.0, max: 4.0 },
-      confianca:      { min: 10, max: 35 },
+      custoPorIntensidade: { desligado: 0, baixo: 100, medio: 250, alto: 500 },
+      faixasLeads: {
+        desligado: { min: 0, max: 0 },
+        baixo:     { min: 1.0, max: 2.0 },
+        medio:     { min: 2.0, max: 4.0 },
+        alto:      { min: 4.0, max: 7.0 }
+      },
+      confianca:      { min: 25, max: 35 },
       maturacao:      3,
-      disponivelDia1: false,
-    },
-    venda_corporativa: {
-      label:          'Venda Corporativa',
-      emoji:          '🤝',
-      tipo:           'estruturado',
-      custoMensal:    200,
-      leadsDia:       { min: 0.1, max: 0.6 },
-      confianca:      { min: 60, max: 90 },
-      maturacao:      14,
       disponivelDia1: false,
     },
   },
@@ -300,6 +360,42 @@ window.AGENCIA.BAL = {
       objecao:  45,
       // abaixo de 45 = perder
     },
+  },
+
+  // ----------------------------------------------------------
+  // PROTEÇÃO JURÍDICA (F8)
+  // ----------------------------------------------------------
+  protecaoJuridica: {
+    planos: {
+      basico: {
+        id: 'basico',
+        nome: 'Proteção Básica',
+        valorMensal: 250,
+        usosPorSemana: 1,
+        cobertura: [
+          'reclamacao_pos_venda',
+          'desconto_agressivo_cliente'
+        ],
+        descricao: 'Cobre 1 acionamento jurídico por semana. Indicado para operação inicial.'
+      },
+      completo: {
+        id: 'completo',
+        nome: 'Proteção Completa',
+        valorMensal: 350,
+        usosPorSemana: 2,
+        cobertura: [
+          'reclamacao_pos_venda',
+          'desconto_agressivo_cliente',
+          'concorrente_mais_barato',
+          'mudanca_tarifa_durante_negociacao'
+        ],
+        descricao: 'Cobre 2 acionamentos por semana. Recomendado para operações com maior volume.'
+      }
+    },
+    semProtecao: {
+      multaBase: { min: 300, max: 1500 },
+      danoReputacaoBase: { min: 5, max: 20 }
+    }
   },
 
   // ----------------------------------------------------------
