@@ -255,3 +255,38 @@ window.AGENCIA.data.dicasChat = {
   resultadoPerdido: "Desta vez não deu. Analise o perfil do cliente e veja se houve algum ponto de atrito que poderia ser evitado.",
   resultadoObjecao: "O cliente ainda tem dúvidas. Use o follow-up para sanar as questões técnicas ou de segurança que restaram."
 };
+
+window.AGENCIA.data.promptsClientes.getSystemPrompt = function(perfil, lead, cotacao, agencia) {
+  const config = window.AGENCIA.data.promptsClientes[perfil];
+  if (!config) return '';
+
+  // Substituir placeholders no texto de personalidade
+  let prompt = config.personalidade
+    .replace('{nome}', lead.nome || 'Cliente')
+    .replace('{indicadoPor}', lead.indicadoPor ||
+      window.AGENCIA.data.nomesClientes.indicadores[
+        Math.floor(Math.random() * window.AGENCIA.data.nomesClientes.indicadores.length)
+      ]);
+
+  // Injetar contexto da cotação
+  prompt += `\n\nContexto desta negociação:
+- Valor da proposta: R$ ${cotacao.valorTotal?.toLocaleString('pt-BR') || '?'}
+- Fee cobrado: R$ ${cotacao.fee?.toLocaleString('pt-BR') || '?'}
+- Destino: ${lead.destino || 'não informado'}
+- Viajantes: ${lead.viajantes || 1} pessoa(s)
+- Partida em: ${lead.janelaDias || '?'} dias
+- Reputação da agência: ${agencia.reputacao}/100`;
+
+  // Instrução de comportamento final
+  prompt += `\n\nRegras obrigatórias:
+- Responda SEMPRE em português brasileiro natural, como uma conversa de WhatsApp.
+- Máximo de 3 frases curtas por resposta.
+- Nunca use markdown, listas, emojis ou asteriscos.
+- Nunca quebre o personagem.
+- Nunca revele que é uma IA.
+- Se estiver muito satisfeito após uma boa resposta do agente, sinalize
+  que quer fechar com frases como "pode confirmar" ou "vamos fechar".
+- Se estiver muito insatisfeito após 2 trocas ruins, encerre educadamente.`;
+
+  return prompt;
+};

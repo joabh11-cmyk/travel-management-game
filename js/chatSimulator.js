@@ -5,7 +5,7 @@ window.AGENCIA.chatSimulator = (function() {
 
   async function iniciarChat(lead, cotacao, agencia, apiKey) {
     const BAL = window.AGENCIA.BAL;
-    const systemPrompt = window.AGENCIA.data.promptsClientes.getSystemPrompt(lead, cotacao, agencia);
+    const systemPrompt = window.AGENCIA.data.promptsClientes.getSystemPrompt(lead.perfil, lead, cotacao, agencia);
     
     const sessao = {
       lead,
