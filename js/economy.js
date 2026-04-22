@@ -142,6 +142,13 @@ window.AGENCIA.economy = (function() {
       s.alertas.push(`⚠️ CAIXA ABAIXO DA RESERVA: Mínimo recomendado é R$ ${reservaMinima.toLocaleString('pt-BR', {minimumFractionDigits:2})}.`);
     }
 
+    // 4. Reputação
+    if (s.agencia.reputacao <= 5) {
+      s.alertas.push(`🔴 REPUTAÇÃO CRÍTICA: O mercado está perdendo a confiança em você. Corrija imediatamente!`);
+    } else if (s.agencia.reputacao < 15) {
+      s.alertas.push(`⚠️ REPUTAÇÃO BAIXA: Cuidado, sua marca está sofrendo no mercado.`);
+    }
+
     // Atualiza Topbar alerts
     const topbarAlerts = document.getElementById('topbar-alerts');
     if (topbarAlerts) {
@@ -177,8 +184,15 @@ window.AGENCIA.economy = (function() {
     }
 
     // Lógica de Reputação
-    if (s.agencia.reputacao <= BAL.gameOver.reputacaoMinimaGameOver) {
-      return { gameOver: true, motivo: "A reputação despencou. O mercado se fechou e os parceiros cortaram o seu crédito." };
+    if (s.agencia.reputacao <= 5) {
+      s.agencia.diasReputacaoCritica = (s.agencia.diasReputacaoCritica || 0) + 1;
+      window.AGENCIA.loop.logEvento(s, 'erro', `📉 REPUTAÇÃO CRÍTICA (${s.agencia.diasReputacaoCritica}/7 dias).`);
+
+      if (s.agencia.diasReputacaoCritica >= 7) {
+        return { gameOver: true, motivo: "Sua reputação permaneceu crítica por muito tempo. O mercado fechou as portas para sua agência." };
+      }
+    } else {
+      s.agencia.diasReputacaoCritica = 0;
     }
 
     return { gameOver: false };
