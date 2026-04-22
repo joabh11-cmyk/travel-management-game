@@ -47,7 +47,51 @@ window.AGENCIA.painelCaixa = {
             ${caixa.saldo < alertMin ? '<span class="badge badge-warn">⚠ Atenção</span>' : ''}
           </div>
           <div class="saldo-destaque ${saldoCor}">${this._brl(caixa.saldo)}</div>
-          ${caixa.saldo < 0 ? `<div class="alerta-msg">🚨 Saldo negativo — ${s.caixa.diasSaldoNegativo} dia(s) consecutivo(s). Corrija ou perca a campanha.</div>` : ''}
+          ${caixa.saldo < 0 ? `<div class="alerta-msg">🚨 Saldo negativo — ${s.caixa.diasNegativo || 0} dia(s) consecutivo(s). Corrija ou perca a campanha.</div>` : ''}
+        </div>
+
+        <!-- Alertas Ativos -->
+        ${(s.alertas && s.alertas.length > 0) ? `
+        <div class="card" style="border-color:var(--amber); background:rgba(245,158,11,0.05);">
+          <div class="card-header"><div class="card-title" style="color:var(--amber);">⚠️ Alertas F6 Ativos</div></div>
+          <div style="padding: 10px; font-size: 13px; color:var(--text); line-height: 1.5;">
+            ${s.alertas.map(a => `<div>${a}</div>`).join('')}
+          </div>
+        </div>
+        ` : ''}
+
+        <!-- Status Financeiro e Agendamentos -->
+        <div class="two-col-grid" style="margin-bottom: 20px;">
+          <div class="card" style="margin-bottom:0;">
+            <div class="card-header"><div class="card-title">Previsões (Receitas Agendadas)</div></div>
+            <div style="max-height:120px; overflow-y:auto; padding-right:5px;">
+              ${(!s.caixa.receitasAgendadas || s.caixa.receitasAgendadas.length === 0)
+                ? '<div class="empty-list">Nenhum recebimento futuro.</div>'
+                : s.caixa.receitasAgendadas.map(r => `
+                    <div class="fluxo-linha" style="font-size:12px;">
+                      <span class="fluxo-desc" style="color:var(--text-2)">Dia ${r.dia} - ${r.desc}</span>
+                      <span class="fluxo-val g">+${this._brl(r.valor)}</span>
+                    </div>
+                  `).join('')
+              }
+            </div>
+            ${(s.caixa.receitasAgendadas && s.caixa.receitasAgendadas.length > 0) ? `
+              <div class="fluxo-total entrada" style="margin-top:8px;">A Receber: ${this._brl(s.caixa.receitasAgendadas.reduce((a, r) => a + r.valor, 0))}</div>
+            ` : ''}
+          </div>
+          <div class="card" style="margin-bottom:0;">
+            <div class="card-header"><div class="card-title">Métricas Operacionais</div></div>
+            <div style="padding-top:10px;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+                <span style="color:var(--text-2);">Burn Rate (Semanal Estimado):</span>
+                <span class="r">−${this._brl(window.AGENCIA.economy ? window.AGENCIA.economy.calcularBurnRate(s) : 0)}</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; font-size:13px;">
+                <span style="color:var(--text-2);">Receitas a Entrar (Futuro):</span>
+                <span class="g">+${this._brl((s.caixa.receitasAgendadas || []).reduce((a, r) => a + r.valor, 0))}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Fluxo de hoje -->

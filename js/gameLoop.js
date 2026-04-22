@@ -24,8 +24,10 @@ window.AGENCIA.loop = (function() {
     // 2. Inicializar log do dia
     _iniciarLogDia(s);
 
-    // 3. Aplicar custos fixos diários
-    _aplicarCustosFixosDia(s, BAL);
+    // 3. Aplicar economia F6 (custos fixos, recebimentos agendados, alertas)
+    if (window.AGENCIA.economy) {
+      window.AGENCIA.economy.processarFluxoDeCaixaDiario(s.tempo.dia);
+    }
 
     // 4. Atualizar fadiga do dono (1 ponto por dia de operação)
     _atualizarFadiga(s, BAL);
@@ -54,12 +56,16 @@ window.AGENCIA.loop = (function() {
     }
 
     // 7. Verificar game over
-    const go = window.AGENCIA.verificarGameOver();
-    if (go.gameOver) {
-      s.gameOver = true;
-      s.gameOverMotivo = go.motivo;
-      window.AGENCIA.ui.mostrarGameOver(go.motivo);
-      return;
+    if (window.AGENCIA.economy && window.AGENCIA.economy.verificarGameOver) {
+      const go = window.AGENCIA.economy.verificarGameOver(s);
+      if (go && go.gameOver) {
+        s.gameOver = true;
+        s.gameOverMotivo = go.motivo;
+        if (window.AGENCIA.ui.mostrarGameOver) {
+          window.AGENCIA.ui.mostrarGameOver(go.motivo);
+        }
+        return;
+      }
     }
 
     // 8. Atualizar topbar
@@ -102,36 +108,7 @@ window.AGENCIA.loop = (function() {
     return s && s.pa.disponivel >= custo;
   }
 
-  // ----------------------------------------------------------
-  // CUSTOS FIXOS DIÁRIOS (Internet + CRM + Ferramentas / 30)
-  // ----------------------------------------------------------
-  function _aplicarCustosFixosDia(s, BAL) {
-    const cf  = BAL.custosFixos;
-    const dif = BAL.dificuldades[s.agencia.dificuldade];
 
-    const totalMensal =
-      (cf.internet || 0) +
-      (cf.crm       || 0) +
-      (cf.ferramentas || 0) +
-      (cf.contabilidade || 0) +
-      (cf.juridico || 0) +
-      // Custo dos canais pagos ativos
-      _custoCanaisAtivos(s, BAL);
-
-    const custoDiario = Math.round((totalMensal / 30) * (dif.multiplicadorPunicao || 1) * 10) / 10;
-
-    if (custoDiario > 0) {
-      window.AGENCIA.registrarSaida('Custos fixos do dia', custoDiario, 'fixo');
-      _logEvento(s, 'custo', `📋 Custos fixos: −R$ ${_fmt(custoDiario)}`);
-    }
-  }
-
-  function _custoCanaisAtivos(s, BAL) {
-    return (s.canaisAtivos || []).reduce(function(acc, canalId) {
-      const canal = BAL.canais[canalId];
-      return acc + (canal ? (canal.custoMensal || 0) : 0);
-    }, 0);
-  }
 
   // ----------------------------------------------------------
   // FADIGA E PA

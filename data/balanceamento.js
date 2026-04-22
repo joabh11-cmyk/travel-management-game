@@ -323,6 +323,17 @@ window.AGENCIA.BAL = {
   },
 
   // ----------------------------------------------------------
+  // FLUXO DE CAIXA
+  // ----------------------------------------------------------
+  fluxoCaixa: {
+    recebimentoDias: 2,           // D+2 para o dinheiro entrar
+    taxaCartao: 0.04,             // 4% da receita bruta como custo variável
+    custoFixoExtraPorVenda: 20,   // Emissão, pequeno brinde, atendimento
+    reservaMinimaSemanas: 2,      // Múltiplo do custo fixo semanal para alerta
+    burnRateThreshold: 500,       // Queima semanal que dispara alerta de alto risco
+  },
+
+  // ----------------------------------------------------------
   // SAZONALIDADE (multiplicador de leads por mês, 1-indexed)
   // ----------------------------------------------------------
   sazonalidade: [

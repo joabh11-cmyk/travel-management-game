@@ -356,10 +356,10 @@ window.AGENCIA.painelComercial = (function() {
       s.kpis.totalVendas++;
       s.agencia.reputacao = Math.min(100, s.agencia.reputacao + 1);
       
-      // Contabilidade (simplificada para F5)
-      const receita = lead.cotacao.valorTotal;
-      const custo = lead.cotacao.custoLiquido;
-      s.caixa.saldo += (receita - custo);
+      // Contabilidade usando engine F6
+      if (window.AGENCIA.economy) {
+        window.AGENCIA.economy.registrarVendaNoCaixa(lead, s.tempo.dia);
+      }
       
       s.pipeline = s.pipeline.filter(l => l.id !== lead.id);
       window.AGENCIA.ui.renderizarPainelAtivo();
@@ -442,7 +442,9 @@ window.AGENCIA.painelComercial = (function() {
           window.AGENCIA.loop.logEvento(s, 'sucesso', `🎉 Contornou objeção! ${lead.nome} fechou o pacote!`);
           s.kpis.totalVendas++;
           s.agencia.reputacao = Math.min(100, s.agencia.reputacao + 1);
-          s.caixa.saldo += (lead.cotacao.valorTotal - lead.cotacao.custoLiquido);
+          if (window.AGENCIA.economy) {
+            window.AGENCIA.economy.registrarVendaNoCaixa(lead, s.tempo.dia);
+          }
           s.pipeline = s.pipeline.filter(l => l.id !== lead.id);
         } else {
           window.AGENCIA.loop.logEvento(s, 'erro', `❌ Objeção não contornada. ${lead.nome} não quis fechar. "${novoRes.mensagemCliente}"`);
