@@ -83,11 +83,14 @@ window.AGENCIA.chatSimulator = (function() {
     return window.AGENCIA.clientAI.decisaoFinal(sessao);
   }
 
-  async function _chamadaGemini(systemPrompt, contents, apiKey) {
+  async function _chamadaGemini(systemPrompt, contents, apiKey, isRetry = false) {
     if (!contents || contents.length === 0) {
       console.error('[ChatSimulator] contents vazio — chamada abortada');
       throw new Error("Histórico de mensagens vazio.");
     }
+
+    // A) Delay de 2 segundos ANTES de cada chamada fetch
+    await new Promise(r => setTimeout(r, 2000));
 
     const BAL = window.AGENCIA.BAL;
     const model = 'gemini-2.0-flash'; // Modelo definitivo
@@ -113,6 +116,15 @@ window.AGENCIA.chatSimulator = (function() {
       body: JSON.stringify(body)
     });
 
+    // B) Detectar erro 429 na resposta
+    if (response.status === 429) {
+      if (isRetry) {
+        _bloquearInputTemporariamente(30);
+        throw new Error("O cliente está ocupado agora. Tente novamente em alguns segundos.");
+      }
+      return await _tratarRateLimit(systemPrompt, contents, apiKey);
+    }
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error?.message || "Erro na API do Gemini");
@@ -125,6 +137,56 @@ window.AGENCIA.chatSimulator = (function() {
     }
 
     return data.candidates[0].content.parts[0].text;
+  }
+
+  // C) Função tratarRateLimit
+  async function _tratarRateLimit(systemPrompt, contents, apiKey) {
+    const pausas = [
+      'peraí, voltei já...',
+      'um segundo, tô resolvendo outra coisa',
+      'opa, caiu a net aqui kk. já volto'
+    ];
+    const frase = pausas[Math.floor(Math.random() * pausas.length)];
+
+    // Exibir frase como bolha do cliente
+    if (window.AGENCIA.ui && window.AGENCIA.ui._addChatBubble) {
+      window.AGENCIA.ui._addChatBubble('cliente', frase);
+    }
+
+    // Mostrar "cliente digitando..." por 8 segundos
+    const typing = document.getElementById('chat-typing');
+    if (typing) {
+      typing.style.visibility = 'visible';
+      await new Promise(r => setTimeout(r, 8000));
+      typing.style.visibility = 'hidden';
+    } else {
+      await new Promise(r => setTimeout(r, 8000));
+    }
+
+    // Retry 1 vez
+    return await _chamadaGemini(systemPrompt, contents, apiKey, true);
+  }
+
+  function _bloquearInputTemporariamente(segundos) {
+    const input = document.getElementById('chat-input');
+    const btn = document.getElementById('btn-chat-send');
+    if (!input || !btn) return;
+
+    input.disabled = true;
+    btn.disabled = true;
+
+    let restante = segundos;
+    const interval = setInterval(() => {
+      restante--;
+      input.placeholder = `Aguarde ${restante}s para continuar...`;
+      if (restante <= 0) {
+        clearInterval(interval);
+        input.disabled = false;
+        btn.disabled = false;
+        input.placeholder = "Digite sua mensagem...";
+        input.focus();
+      }
+    }, 1000);
   }
 
   return {
