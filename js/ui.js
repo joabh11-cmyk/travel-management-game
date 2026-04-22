@@ -1032,51 +1032,136 @@ window.AGENCIA.ui = {
     if (!this._chatSessao) return;
     
     const sessao = this._chatSessao;
-    const res = window.AGENCIA.chatSimulator.encerrarChat(sessao);
+    const res = window.AGENCIA.chatSimulator.encerrarChat(sessao); // gera feedbackCompleto
     
     const input = document.getElementById('chat-input');
     const sendBtn = document.getElementById('btn-chat-send');
     if (input) input.disabled = true;
     if (sendBtn) sendBtn.disabled = true;
 
-    // Mostra resultado final no próprio chat
-    this._addChatBubble('sistema', "--- NEGOCIAÇÃO ENCERRADA ---");
-    
+    this._renderizarPainelFeedback(sessao.feedbackCompleto);
+  },
+
+  _renderizarPainelFeedback: function(fb) {
     const area = document.getElementById('chat-messages');
-    const resultCard = document.createElement('div');
-    resultCard.className = 'card fade-in';
-    resultCard.style.marginTop = '20px';
-    resultCard.style.border = '1px solid ' + (res.decisao === 'ganho' ? 'var(--green)' : res.decisao === 'objecao' ? 'var(--amber)' : 'var(--red)');
+    if (!area) return;
+
+    // Limpa o "cliente digitando" se estiver ativo
+    const typing = document.getElementById('chat-typing');
+    if (typing) typing.style.visibility = 'hidden';
+
+    const container = document.createElement('div');
+    container.className = 'feedback-painel fade-in';
     
-    resultCard.innerHTML = `
-      <div style="text-align: center;">
-        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-3); margin-bottom: 5px;">Decisão Final</div>
-        <div style="font-size: 18px; font-weight: 800; color: ${res.decisao === 'ganho' ? 'var(--green)' : res.decisao === 'objecao' ? 'var(--amber)' : 'var(--red)'}; margin-bottom: 10px;">
-          ${res.decisao === 'ganho' ? '🎉 VENDA FECHADA!' : res.decisao === 'objecao' ? '⚠️ OBJEÇÃO GERADA' : '❌ NEGÓCIO PERDIDO'}
+    const turnosHTML = fb.turnosDetalhados.map(t => `
+      <tr class="turno-${t.deltaScore > 0 ? 'positivo' : (t.deltaScore < 0 ? 'negativo' : 'neutro')}">
+        <td>Turno ${t.numero}</td>
+        <td style="color: var(--text-2)">${t.resumoJogador}</td>
+        <td class="delta">${t.icone} ${t.deltaScore > 0 ? '+' : ''}${t.deltaScore}</td>
+      </tr>
+    `).join('');
+
+    const compGridHTML = Object.entries(fb.competencias).map(([key, c]) => `
+      <div class="competencia-item">
+        <div class="competencia-nome">${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</div>
+        <div class="competencia-barra">
+          <div class="competencia-fill" style="width: ${c.score}%; background: ${c.score > 70 ? 'var(--green)' : c.score > 40 ? 'var(--amber)' : 'var(--red)'}"></div>
         </div>
-        <div style="font-size: 13px; color: var(--text-2); margin-bottom: 15px; font-style: italic;">
-          "${res.mensagemCliente}"
+        <div class="competencia-rotulo" style="color: ${c.score > 70 ? 'var(--green)' : c.score > 40 ? 'var(--amber)' : 'var(--red)'}">${c.rotulo}</div>
+        <div class="competencia-dica">${c.dica}</div>
+      </div>
+    `).join('');
+
+    container.innerHTML = `
+      <div class="feedback-header ${fb.decisao}">
+        <div class="feedback-decisao">
+          ${fb.decisao === 'ganho' ? '🎉 VENDA FECHADA!' : fb.decisao === 'objecao' ? '⚠️ OBJEÇÃO GERADA' : '❌ NEGÓCIO PERDIDO'}
         </div>
-        <div style="font-size: 11px; background: var(--bg-base); padding: 10px; border-radius: 6px; text-align: left; color: var(--text-2);">
-          <strong>Dica:</strong> ${this._gerarDicaEducativa(sessao, res)}
+        <div class="feedback-frase-cliente">"${fb.mensagemCliente}"</div>
+      </div>
+
+      <div class="feedback-secao">
+        <h4>Revisão da Negociação</h4>
+        <table class="feedback-turnos">
+          ${turnosHTML}
+        </table>
+      </div>
+
+      <div class="feedback-secao">
+        <h4>Diagnóstico de Competências</h4>
+        <div class="competencias-grid">
+          ${compGridHTML}
         </div>
-        <button class="btn-start" style="margin-top: 15px; background: var(--bg-elevated); color: var(--text-1);" 
-          onclick="window.AGENCIA.ui._aplicarResultadoChat()">Finalizar e Sair</button>
+      </div>
+
+      <div class="feedback-secao feedback-perfil-contexto">
+        <span class="perfil-badge">${this._chatSessao.lead.perfil.replace('_', ' ')}</span>
+        <p>${fb.perfilContexto}</p>
+      </div>
+
+      <div class="feedback-secao feedback-dica-prioritaria">
+        <h4>Momento Crítico</h4>
+        <p style="font-size: 13px; color: var(--text-1);">${fb.dicaPrioritaria}</p>
+      </div>
+
+      <div class="feedback-secao feedback-score">
+        <div class="score-total">${fb.scoreTotal}/100</div>
+        <div class="score-comparativo">
+          Média para esse perfil: ${fb.scoreComparativo.media} | Máximo possível: ${fb.scoreComparativo.maximo}
+        </div>
+        <p class="score-frase">${fb.scoreComparativo.frase}</p>
+      </div>
+
+      <div class="feedback-acoes">
+        <button class="btn-start" style="background: var(--bg-elevated); color: var(--text-1); flex: 1;" onclick="window.AGENCIA.ui.tentarNovamenteChat()">
+          Tentar Novamente
+        </button>
+        <button class="btn-start" style="background: var(--blue); color: white; flex: 1;" onclick="window.AGENCIA.ui._aplicarResultadoChat()">
+          Finalizar e Sair
+        </button>
       </div>
     `;
-    area.appendChild(resultCard);
-    area.scrollTop = area.scrollHeight;
+
+    area.innerHTML = ''; // Limpa o chat para focar no feedback
+    area.appendChild(container);
+    area.scrollTop = 0;
+  },
+
+  tentarNovamenteChat: function() {
+    if (!this._chatSessao) return;
+    const lead = this._chatSessao.lead;
+    const cotacao = this._chatSessao.cotacao;
+    const s = window.AGENCIA.getState();
+    const apiKey = localStorage.getItem('GEMINI_API_KEY');
+
+    // Reinicia sem consumir PA
+    const area = document.getElementById('chat-messages');
+    if (area) area.innerHTML = '';
+    
+    const input = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('btn-chat-send');
+    if (input) {
+      input.disabled = false;
+      input.value = '';
+    }
+    if (sendBtn) sendBtn.disabled = false;
+
+    window.AGENCIA.chatSimulator.iniciarChat(lead, cotacao, s.agencia, apiKey).then(sessao => {
+      this._chatSessao = sessao;
+      this._addChatBubble('cliente', sessao.historico[0].content);
+      this._atualizarStatsChat({ turnoAtual: 0, scoreAtual: 0 });
+    });
   },
 
   _aplicarResultadoChat: function() {
     const sessao = this._chatSessao;
     if (!sessao) return;
 
-    const res = window.AGENCIA.chatSimulator.encerrarChat(sessao);
+    const res = sessao.feedbackCompleto; // usa o feedback já gerado
     const s = window.AGENCIA.getState();
     const lead = sessao.lead;
 
-    // Aplica no pipeline conforme o resultado da decisão final do clientAI
+    // Aplica no pipeline conforme o resultado
     if (res.decisao === 'ganho') {
       window.AGENCIA.loop.logEvento(s, 'sucesso', `🎉 Chat: ${lead.nome} fechou o pacote!`);
       s.kpis.totalVendas++;
@@ -1085,7 +1170,7 @@ window.AGENCIA.ui = {
       s.pipeline = s.pipeline.filter(l => l.id !== lead.id);
     } else if (res.decisao === 'perdido') {
       window.AGENCIA.loop.logEvento(s, 'erro', `❌ Chat: ${lead.nome} desistiu da compra.`);
-      s.perdas.push({ ...lead, motivoPerda: res.motivo || 'Desistência no chat', diaPerda: s.tempo.dia });
+      s.perdas.push({ ...lead, motivoPerda: 'Desistência no chat', diaPerda: s.tempo.dia });
       s.kpis.totalLeadsPerdidos++;
       s.pipeline = s.pipeline.filter(l => l.id !== lead.id);
     } else if (res.decisao === 'objecao') {
