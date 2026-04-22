@@ -61,7 +61,6 @@ window.AGENCIA.painelComercial = (function() {
       html += `<div class="empty-list">Nenhum lead novo. Aguarde captação no próximo dia.</div>`;
     } else {
       s.leads.forEach(lead => {
-        const pInfo = BAL.perfis[lead.perfil] || {};
         const cInfo = BAL.canais[lead.canal] || {};
         
         let validadeClass = '';
@@ -72,11 +71,11 @@ window.AGENCIA.painelComercial = (function() {
         html += `
           <div class="lead-item">
             <div class="lead-header">
-              <span class="lead-nome">${lead.nome} ${pInfo.emoji || ''}</span>
+              <span class="lead-nome">${lead.nome} 👤</span>
               <span class="lead-canal" title="${cInfo.label}">${cInfo.emoji || '🌐'}</span>
             </div>
             <div class="lead-info">
-              <div>Urgência: <span class="${validadeClass}">${lead.urgencia.toUpperCase()}</span> (${lead.diasRestantes}d)</div>
+              <div>Urgência App: <span class="${validadeClass}">${lead.urgencia.toUpperCase()}</span> (${lead.diasRestantes}d)</div>
               <div>Confiança: <strong>${lead.confianca}</strong>/100</div>
             </div>
             <div class="lead-actions">
@@ -106,12 +105,20 @@ window.AGENCIA.painelComercial = (function() {
       html += `<div class="empty-list">Nenhum negócio em andamento. Atenda leads da caixa de entrada.</div>`;
     } else {
       s.pipeline.forEach(lead => {
-        const pInfo = BAL.perfis[lead.perfil] || {};
+        const pInfo = (lead.qualificado && lead.revealPerfil) ? (BAL.perfis[lead.perfil] || {}) : { emoji: '👤' };
         
         let statusLabel = lead.status.toUpperCase();
         let statusClass = 'b';
         if (lead.status === 'objecao') { statusLabel = 'OBJEÇÃO'; statusClass = 'a'; }
         if (lead.status === 'cotacao_enviada') { statusLabel = 'AGUARD. CLIENTE'; statusClass = 'g'; }
+
+        const ticketHtml = (lead.qualificado && lead.revealTicket) 
+          ? `<div>Ticket: <strong>${(lead.ticketPotencial || 0).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</strong></div>` 
+          : `<div>Ticket: <em>${lead.qualificado ? '(Não revelado)' : '(Requer qualificação)'}</em></div>`;
+          
+        const urgenciaHtml = (lead.qualificado && lead.revealUrgencia)
+          ? `<div>Urgência Real: <strong>${(lead.urgenciaReal || lead.urgencia).toUpperCase()}</strong></div>`
+          : `<div>Urgência: <strong>${(lead.urgencia).toUpperCase()}</strong> <em>(Estimada)</em></div>`;
 
         html += `
           <div class="lead-item" style="border-left-color: var(--${statusClass === 'b' ? 'blue' : statusClass === 'a' ? 'amber' : 'green'})">
@@ -120,8 +127,8 @@ window.AGENCIA.painelComercial = (function() {
               <span class="badge ${statusClass === 'a' ? 'badge-warn' : ''}">${statusLabel}</span>
             </div>
             <div class="lead-info" style="flex-direction: column; gap: 4px;">
-              ${lead.qualificado ? `<div>Ticket: <strong>${(lead.ticketPotencial || 0).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</strong></div>` : `<div>Ticket: <em>(Requer qualificação)</em></div>`}
-              <div>Urgência Real: <strong>${(lead.urgenciaReal || lead.urgencia).toUpperCase()}</strong></div>
+              ${ticketHtml}
+              ${urgenciaHtml}
               <div>Confiança: <strong>${lead.confianca}</strong>/100</div>
               ${lead.cotacao ? `<div style="margin-top:4px; padding-top:4px; border-top:1px dashed var(--border)">
                 Cotação: ${(lead.cotacao.valorTotal).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})} (Fee: R$ ${lead.cotacao.fee})<br>

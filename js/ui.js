@@ -477,6 +477,216 @@ window.AGENCIA.ui = {
   },
 
   // ----------------------------------------------------------
+  // Qualificação Conversacional (F4.1)
+  // ----------------------------------------------------------
+  _qualState: null,
+
+  abrirModalQualificacao: function(leadId) {
+    const s = window.AGENCIA.getState();
+    const lead = s.pipeline.find(l => l.id === leadId);
+    if (!lead) return;
+
+    this._qualState = {
+      leadId: leadId,
+      leadNome: lead.nome,
+      confiancaInicial: lead.confianca,
+      perfilBase: lead.perfil || 'padrao', // 'inseguro', 'apressado', etc
+      rotaId: null,
+      rodadas: [],
+      rodadaAtual: 0,
+      impactosAcc: { deltaConfianca: 0, deltaChanceObjecao: 0, revealTicket: false, revealUrgencia: false, revealPerfil: false, revealDecisor: false }
+    };
+
+    const BAL = window.AGENCIA.BAL;
+    const rotas = BAL.qualificacao.rotas;
+
+    const el = document.createElement('div');
+    el.id = 'modal-overlay-qualificacao';
+    el.className = 'modal-overlay';
+
+    let botoes = Object.keys(rotas).map(rId => {
+      const r = rotas[rId];
+      return `<button class="btn-sm" style="width:100%; text-align:left; justify-content:flex-start; margin-bottom:10px; padding:12px; background:var(--surface); border:1px solid var(--border); color:var(--text);"
+                onclick="window.AGENCIA.ui.escolherRotaQual('${rId}')">
+                <div style="font-weight:bold;">${r.label} <small style="font-weight:normal;">(${r.rodadas.length} rodadas)</small></div>
+                <div style="font-size:11px; color:var(--text-3); margin-top:4px;">${r.descricao}</div>
+              </button>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="modal-box fade-in" style="border-color:var(--blue);">
+        <div class="modal-header" style="border-color:var(--blue);">
+          <div class="modal-tipo" style="color:var(--blue);">🔍 QUALIFICAÇÃO DE LEAD</div>
+          <div class="modal-titulo">${lead.nome}</div>
+        </div>
+        <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+          <p style="color:var(--text-2);font-size:14px;line-height:1.6;margin-bottom:20px;">
+            Qualifique este lead conversando com ele. Escolha sua abordagem inicial. Cada abordagem levará a um diálogo de 3 a 5 etapas.
+          </p>
+          <div style="margin-top:20px;">
+            <p style="font-size:13px; font-weight:700; margin-bottom:10px; color:var(--text);">Escolha a Rota de Abertura:</p>
+            ${botoes}
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(el);
+  },
+
+  escolherRotaQual: function(rotaId) {
+    const BAL = window.AGENCIA.BAL;
+    const r = BAL.qualificacao.rotas[rotaId];
+    if (!r) return;
+
+    this._qualState.rotaId = rotaId;
+    this._qualState.rodadas = r.rodadas;
+    this._qualState.impactosAcc.deltaConfianca += (r.efeito_base.confianca || 0);
+    this._qualState.impactosAcc.deltaChanceObjecao += (r.efeito_base.chanceObjecao || 0);
+
+    this.renderQualificacaoRodada();
+  },
+
+  renderQualificacaoRodada: function() {
+    const qs = this._qualState;
+    if (!qs) return;
+
+    const BAL = window.AGENCIA.BAL;
+    
+    // Se terminou as rodadas
+    if (qs.rodadaAtual >= qs.rodadas.length) {
+      this.renderQualificacaoResumo();
+      return;
+    }
+
+    const rId = qs.rodadas[qs.rodadaAtual];
+    const rodada = BAL.qualificacao.rodadas[rId];
+
+    const confiancaAtual = Math.max(0, Math.min(100, qs.confiancaInicial + qs.impactosAcc.deltaConfianca));
+
+    const botoes = rodada.opcoes.map((o, idx) => {
+      return `<button class="btn-sm" style="width:100%; text-align:left; justify-content:flex-start; margin-bottom:10px; padding:12px; background:var(--surface); border:1px solid var(--border); color:var(--text); flex-direction:column; align-items:flex-start;"
+                onclick="window.AGENCIA.ui.escolherOpcaoQual(${idx})">
+                <div style="font-size:13px; font-weight:600; margin-bottom:4px;">${o.label}</div>
+                <div style="font-size:11px; color:var(--text-3); font-style:italic;">${o.dica}</div>
+              </button>`;
+    }).join('');
+
+    const el = document.getElementById('modal-overlay-qualificacao');
+    el.innerHTML = `
+      <div class="modal-box fade-in" style="border-color:var(--blue);">
+        <div class="modal-header" style="border-color:var(--blue); justify-content:space-between; display:flex;">
+          <div>
+            <div class="modal-tipo" style="color:var(--blue);">🔍 ${qs.leadNome}</div>
+            <div class="modal-titulo">Rodada ${qs.rodadaAtual + 1} de ${qs.rodadas.length}</div>
+          </div>
+          <div style="text-align:right; width: 120px;">
+             <div style="font-size:10px; color:var(--text-3); margin-bottom:4px;">Confiança Estimada</div>
+             <div style="height: 6px; background:var(--surface-2); border-radius:3px; overflow:hidden; margin-bottom: 2px;">
+               <div style="height: 100%; width:${confiancaAtual}%; background:${confiancaAtual >= 60 ? 'var(--green)' : confiancaAtual <= 40 ? 'var(--red)' : 'var(--amber)'}; transition: width 0.3s ease;"></div>
+             </div>
+             <div style="font-size:11px; font-weight:bold; color:var(--text);">${confiancaAtual}/100</div>
+          </div>
+        </div>
+        <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+          <div style="background:var(--surface-2); padding:16px; border-radius:8px; border-left:4px solid var(--border); margin-bottom:20px;">
+            <p style="color:var(--text);font-size:14px;line-height:1.6;font-style:italic;">
+              "${rodada.contexto}"
+            </p>
+          </div>
+          <div>
+            <p style="font-size:13px; font-weight:700; margin-bottom:10px; color:var(--text-2);">Sua resposta:</p>
+            ${botoes}
+          </div>
+          <div style="margin-top:20px; font-size:11px; color:var(--primary); text-align:center;">
+             ${rodada.dicaEducativa || ''}
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  escolherOpcaoQual: function(opcaoIdx) {
+    const qs = this._qualState;
+    if (!qs) return;
+    
+    const BAL = window.AGENCIA.BAL;
+    const rId = qs.rodadas[qs.rodadaAtual];
+    const rodada = BAL.qualificacao.rodadas[rId];
+    const opcao = rodada.opcoes[opcaoIdx];
+
+    const imp = opcao.impactos;
+    if (imp.revealTicket) qs.impactosAcc.revealTicket = true;
+    if (imp.revealUrgencia) qs.impactosAcc.revealUrgencia = true;
+    if (imp.revealPerfil) qs.impactosAcc.revealPerfil = true;
+    if (imp.revealDecisor) qs.impactosAcc.revealDecisor = true;
+
+    // Calcular delta confianca com base no perfil (se existir modificador)
+    let dConf = imp.deltaConfianca.padrao || 0;
+    if (imp.deltaConfianca[qs.perfilBase] !== undefined) {
+      dConf = imp.deltaConfianca[qs.perfilBase];
+    }
+    qs.impactosAcc.deltaConfianca += dConf;
+    qs.impactosAcc.deltaChanceObjecao += (imp.deltaChanceObjecao || 0);
+
+    qs.rodadaAtual++;
+    this.renderQualificacaoRodada();
+  },
+
+  renderQualificacaoResumo: function() {
+    const qs = this._qualState;
+    const confiancaFinal = Math.max(0, Math.min(100, qs.confiancaInicial + qs.impactosAcc.deltaConfianca));
+
+    const el = document.getElementById('modal-overlay-qualificacao');
+    el.innerHTML = `
+      <div class="modal-box fade-in" style="border-color:var(--green);">
+        <div class="modal-header" style="border-color:var(--green);">
+          <div class="modal-tipo" style="color:var(--green);">✅ QUALIFICAÇÃO CONCLUÍDA</div>
+          <div class="modal-titulo">Resumo: ${qs.leadNome}</div>
+        </div>
+        <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+          
+          <div class="stats-row" style="margin-bottom:20px;">
+            <div class="stat-tile">
+              <div class="stat-tile-label">Confiança</div>
+              <div class="stat-tile-value ${confiancaFinal >= 60 ? 'g' : confiancaFinal <= 40 ? 'r' : ''}">${confiancaFinal}</div>
+            </div>
+            <div class="stat-tile">
+              <div class="stat-tile-label">Perfil</div>
+              <div class="stat-tile-value b">${qs.impactosAcc.revealPerfil ? 'Revelado' : 'Oculto'}</div>
+            </div>
+            <div class="stat-tile">
+              <div class="stat-tile-label">Orçamento</div>
+              <div class="stat-tile-value ${qs.impactosAcc.revealTicket ? 'g' : ''}">${qs.impactosAcc.revealTicket ? 'Estimado' : 'Incerto'}</div>
+            </div>
+          </div>
+
+          <div style="font-size:13px; color:var(--text-2); line-height:1.6; margin-bottom:20px; background:var(--surface-2); padding:12px; border-radius:6px;">
+            A confiança inicial e chance de objeção deste lead foram ajustadas permanentemente com base na sua condução da conversa.
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button class="btn-start" onclick="window.AGENCIA.ui.finalizarQualificacao()" style="background:var(--green);padding:10px 28px;">
+            Avançar para Cotação →
+          </button>
+        </div>
+      </div>
+    `;
+  },
+
+  finalizarQualificacao: function() {
+    const qs = this._qualState;
+    if (!qs) return;
+    
+    // Aplica na engine
+    window.AGENCIA.pipeline.aplicarQualificacao(qs.leadId, qs.impactosAcc);
+
+    const el = document.getElementById('modal-overlay-qualificacao');
+    if (el) el.remove();
+    this._qualState = null;
+  },
+
+  // ----------------------------------------------------------
   // Eventos de Mercado Pendentes (F7)
   // ----------------------------------------------------------
   mostrarEventosPendentes: function() {

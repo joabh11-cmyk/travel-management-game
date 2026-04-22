@@ -33,37 +33,60 @@ window.AGENCIA.pipeline = (function() {
     return s.pipeline.find(l => l.id === id);
   }
 
-  // Ação 1: Qualificar (1 PA)
-  // Revela ticket potencial e urgência real
+  // Ação 1: Iniciar Qualificação (1 PA)
+  // Abre o modal conversacional em js/ui.js
   function qualificar(id) {
+    const s = window.AGENCIA.getState();
+    const lead = getLead(id);
+    if (!lead || lead.status !== 'qualificando') return false;
+
+    if (!window.AGENCIA.loop.usarPA(1, `Iniciar qualificação de ${lead.nome}`)) {
+      return false;
+    }
+
+    // Chama UI para iniciar a conversa
+    if (window.AGENCIA.ui.abrirModalQualificacao) {
+       window.AGENCIA.ui.abrirModalQualificacao(id);
+    }
+    return true;
+  }
+
+  // Ação 1.1: Finalizar Qualificação Conversacional
+  function aplicarQualificacao(id, impactosAcc) {
     const s = window.AGENCIA.getState();
     const BAL = window.AGENCIA.BAL;
     const lead = getLead(id);
     if (!lead || lead.status !== 'qualificando') return false;
 
-    if (!window.AGENCIA.loop.usarPA(1, `Qualificar lead ${lead.nome}`)) {
-      return false;
-    }
-
     const seg = BAL.segmentos[s.agencia.segmento];
-    
-    // Revelar ticket (baseado no segmento, mais ruído)
+
+    // Define ticket real
     const min = seg.ticketMin;
     const max = seg.ticketMax;
     lead.ticketPotencial = min + Math.random() * (max - min);
 
-    // Revelar urgência real (às vezes o cliente mente)
+    // Define urgência real
     if (Math.random() > 0.8) {
-      // 20% de chance da urgência ser diferente
       const ops = ['urgente', 'normal', 'frio'].filter(x => x !== lead.urgencia);
       lead.urgenciaReal = ops[Math.floor(Math.random() * ops.length)];
     } else {
       lead.urgenciaReal = lead.urgencia;
     }
 
+    // Aplica os impactos acumulados da conversa
+    lead.confianca = Math.max(0, Math.min(100, lead.confianca + (impactosAcc.deltaConfianca || 0)));
+    lead.chanceObjecao = Math.max(0, Math.min(100, (lead.chanceObjecao || 50) + (impactosAcc.deltaChanceObjecao || 0)));
+    
+    // Configura o que foi revelado
+    lead.revealTicket = !!impactosAcc.revealTicket;
+    lead.revealUrgencia = !!impactosAcc.revealUrgencia;
+    lead.revealPerfil = !!impactosAcc.revealPerfil;
+    lead.revealDecisor = !!impactosAcc.revealDecisor;
+
     lead.qualificado = true;
     moverLead(lead, 'cotando');
-    window.AGENCIA.loop.logEvento(s, 'acao', `🔍 Lead ${lead.nome} qualificado. Ticket potencial: R$ ${Math.round(lead.ticketPotencial).toLocaleString('pt-BR')}.`);
+    window.AGENCIA.loop.logEvento(s, 'acao', `🔍 Qualificação de ${lead.nome} concluída. Confiança ajustada para ${lead.confiancaInicial}.`);
+    window.AGENCIA.ui.renderizarPainelAtivo();
     return true;
   }
 
@@ -172,6 +195,7 @@ window.AGENCIA.pipeline = (function() {
 
   return {
     qualificar,
+    aplicarQualificacao,
     enviarCotacao,
     descartar,
     verificarExpiracoesDiarias
