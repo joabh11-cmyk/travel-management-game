@@ -480,4 +480,18 @@ window.AGENCIA.BAL = {
     bonusConfiancaDia1a3:   10,   // leads de rede pessoal têm +10 confiança
     boostVelocidadeDia1:    0.05, // cada hora rápida vale +5% no score
   },
+
+  // ----------------------------------------------------------
+  // CHAT SIMULATOR (MODO TREINO)
+  // ----------------------------------------------------------
+  chatSimulator: {
+    maxTurnos: 5,
+    minTurnos: 3,
+    modeloGemini: 'gemini-1.5-flash',   // gratuito e rápido
+    temperaturaGemini: 0.85,             // mais variado e humano
+    maxTokensResposta: 150,              // respostas curtas
+    penalizacaoRespostaLonga: -3,        // score se jogador mandar > 200 chars com apressado
+    bonusDiferencialMencionado: +5,      // score ao mencionar diferencial claro
+    bonusPerguntaAntesPreco: +8          // score ao perguntar necessidade antes de cotar
+  }
 };

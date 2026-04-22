@@ -206,9 +206,74 @@ window.AGENCIA.clientAI = (function() {
     return avaliarCotacao(lead, cotacao, agencia, state);
   }
 
+  function avaliarTurno(sessao, msgJogador, respGemini) {
+    const BAL = window.AGENCIA.BAL;
+    const lead = sessao.lead;
+    const msg = msgJogador.toLowerCase();
+    let delta = 0;
+
+    // Heurísticas de avaliação baseadas no prompt e perfil
+    if (msg.includes('desconto') || msg.includes('mais barato') || msg.includes('preço')) {
+      if (lead.perfil === 'cacador_preco') delta += 5; // Valoriza falar de preço
+      else delta -= 2;
+    }
+
+    if (msg.includes('garantia') || msg.includes('seguro') || msg.includes('suporte') || msg.includes('ajuda')) {
+      delta += 8; // Sempre bom falar de segurança
+    }
+
+    if (msg.length > 200 && lead.perfil === 'apressado') {
+      delta += BAL.chatSimulator.penalizacaoRespostaLonga;
+    }
+
+    if (msg.includes('experiência') || msg.includes('diferencial') || msg.includes('qualidade')) {
+      delta += BAL.chatSimulator.bonusDiferencialMencionado;
+    }
+
+    if ((msg.includes('precisa') || msg.includes('quer') || msg.includes('gosta')) && sessao.turnoAtual < 2) {
+      delta += BAL.chatSimulator.bonusPerguntaAntesPreco;
+    }
+
+    sessao.scoreAcumulado += delta;
+
+    // Detecção de encerramento na resposta do Gemini
+    const resp = respGemini.toLowerCase();
+    let encerramento = false;
+    let tipo = null;
+
+    if (resp.includes('vou fechar') || resp.includes('pode confirmar') || resp.includes('fechado') || resp.includes('aceito')) {
+      encerramento = true;
+      tipo = 'ganho';
+    } else if (resp.includes('não tenho interesse') || resp.includes('vou pensar') || resp.includes('obrigado, mas não')) {
+      encerramento = true;
+      tipo = 'perdido';
+    }
+
+    return {
+      scoreAtual: sessao.scoreAcumulado,
+      encerramentoDetectado: encerramento,
+      tipoEncerramento: tipo
+    };
+  }
+
+  function decisaoFinal(sessao) {
+    const s = window.AGENCIA.getState();
+    const lead = sessao.lead;
+    const cotacao = sessao.cotacao;
+    const agencia = s.agencia;
+
+    // Reutiliza a lógica de avaliarCotacao, mas injeta o score do chat como bônus/penalidade
+    if (!lead.modificadoresScore) lead.modificadoresScore = {};
+    lead.modificadoresScore.objecoes = (lead.modificadoresScore.objecoes || 0) + (sessao.scoreAcumulado / 2);
+    
+    return avaliarCotacao(lead, cotacao, agencia, s);
+  }
+
   return {
     avaliarCotacao,
-    processarRespostaObjecao
+    processarRespostaObjecao,
+    avaliarTurno,
+    decisaoFinal
   };
 
 })();

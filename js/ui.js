@@ -94,6 +94,21 @@ window.AGENCIA.ui = {
             />
           </div>
 
+          <!-- API Key (Opcional para Chat) -->
+          <div class="field-group">
+            <label class="field-label" for="f-apikey">Chave Gemini API (Opcional)</label>
+            <input
+              id="f-apikey"
+              class="field-input"
+              type="password"
+              placeholder="Cole sua chave aqui para habilitar o Modo Chat..."
+              autocomplete="off"
+            />
+            <div style="font-size:10px; color:var(--text-3); margin-top:6px;">
+              Necessária apenas para o modo de negociação em tempo real via chat.
+            </div>
+          </div>
+
           <!-- Modo financeiro -->
           <div class="field-group">
             <div class="field-label">Modo Financeiro</div>
@@ -195,6 +210,11 @@ window.AGENCIA.ui = {
       document.getElementById('s-seg').textContent = s.emoji + ' ' + s.label;
     });
 
+    const apiKeyInput = document.getElementById('f-apikey');
+    if (localStorage.getItem('AG_GEMINI_KEY')) {
+      apiKeyInput.value = localStorage.getItem('AG_GEMINI_KEY');
+    }
+
     document.getElementById('btn-start').addEventListener('click', function() {
       const nomeEl = document.getElementById('f-nome');
       const nome   = nomeEl.value.trim();
@@ -204,6 +224,12 @@ window.AGENCIA.ui = {
         nomeEl.focus();
         return;
       }
+      
+      const apiKey = apiKeyInput.value.trim();
+      if (apiKey) {
+        localStorage.setItem('AG_GEMINI_KEY', apiKey);
+      }
+
       config.nome = nome;
       window.AGENCIA.iniciarJogo(config);
       window.AGENCIA.ui.renderTelaJogo();
@@ -843,6 +869,252 @@ window.AGENCIA.ui = {
 
   _esc: function(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  },
+
+  // ----------------------------------------------------------
+  // Simulador de Chat (Brasil Real)
+  // ----------------------------------------------------------
+  _chatSessao: null,
+
+  abrirModalChat: async function(leadId) {
+    const s = window.AGENCIA.getState();
+    const lead = s.pipeline.find(l => l.id === leadId);
+    if (!lead) return;
+
+    const apiKey = localStorage.getItem('AG_GEMINI_KEY');
+    if (!apiKey) {
+      alert("Por favor, configure sua Gemini API Key na tela inicial para usar o modo chat.");
+      return;
+    }
+
+    const modalId = 'modal-chat-simulator';
+    const old = document.getElementById(modalId);
+    if (old) old.remove();
+
+    const el = document.createElement('div');
+    el.id = modalId;
+    el.className = 'modal-overlay';
+    el.style.zIndex = '2000';
+    
+    const perfil = window.AGENCIA.BAL.perfis[lead.perfil || 'indicacao'];
+
+    el.innerHTML = `
+      <div class="modal-box fade-in" style="max-width: 600px; height: 80vh; display: flex; flex-direction: column;">
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="font-size: 24px;">${perfil.emoji}</div>
+            <div>
+              <div class="modal-tipo">${perfil.label}</div>
+              <div class="modal-titulo">${lead.nome}</div>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div id="chat-turno" style="font-size: 10px; color: var(--text-3); font-weight: 700; margin-bottom: 4px;">Turno 0/5</div>
+            <div style="width: 100px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;">
+              <div id="chat-score-bar" style="width: 50%; height: 100%; background: var(--amber); transition: all 0.3s;"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div id="chat-messages" class="modal-body" style="flex: 1; overflow-y: auto; background: var(--bg-input); display: flex; flex-direction: column; gap: 12px; padding: 20px;">
+          <div style="color: var(--text-3); font-size: 11px; text-align: center; margin-bottom: 10px;">Iniciando conexão segura com ${lead.nome}...</div>
+        </div>
+
+        <div class="modal-footer" style="padding: 12px 20px; flex-direction: column; gap: 10px; border-top: 1px solid var(--border); flex-shrink: 0;">
+          <div id="chat-typing" style="font-size: 11px; color: var(--blue); height: 16px; visibility: hidden;">${lead.nome} está digitando...</div>
+          <div style="display: flex; gap: 10px; width: 100%;">
+            <input type="text" id="chat-input" placeholder="Digite sua mensagem..." style="flex: 1; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px; color: var(--text-1); outline: none;" disabled>
+            <button id="btn-chat-send" class="btn-start" style="width: auto; padding: 0 20px;" disabled>Enviar</button>
+          </div>
+          <div style="display: flex; justify-content: space-between; width: 100%; margin-top: 5px;">
+            <button class="btn-sm" onclick="window.AGENCIA.ui.encerrarChatSessao()">Encerrar Negociação</button>
+            <div style="font-size: 10px; color: var(--text-3);">Modo Brasil Real (Gemini API)</div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(el);
+
+    // Inicia o motor
+    try {
+      const sessao = await window.AGENCIA.chatSimulator.iniciarChat(lead, lead.cotacao, s.agencia, apiKey);
+      this._chatSessao = sessao;
+      
+      const msgArea = document.getElementById('chat-messages');
+      msgArea.innerHTML = '';
+      
+      // Renderiza a primeira mensagem do cliente
+      const primeiraMsg = sessao.historico.find(m => m.role === 'assistant');
+      if (primeiraMsg) {
+        this._addChatBubble('cliente', primeiraMsg.content);
+      }
+
+      // Ativa input
+      const input = document.getElementById('chat-input');
+      const sendBtn = document.getElementById('btn-chat-send');
+      input.disabled = false;
+      sendBtn.disabled = false;
+      input.focus();
+
+      // Listeners
+      input.addEventListener('keypress', e => { if (e.key === 'Enter') this._enviarMsgChat(); });
+      sendBtn.addEventListener('click', () => this._enviarMsgChat());
+
+    } catch (err) {
+      document.getElementById('chat-messages').innerHTML = `<div style="color: var(--red); padding: 20px; text-align: center;">Erro ao conectar: ${err.message}</div>`;
+    }
+  },
+
+  _enviarMsgChat: async function() {
+    const input = document.getElementById('chat-input');
+    const msg = input.value.trim();
+    if (!msg || !this._chatSessao) return;
+
+    input.value = '';
+    this._addChatBubble('agente', msg);
+    
+    const typing = document.getElementById('chat-typing');
+    typing.style.visibility = 'visible';
+    
+    const apiKey = localStorage.getItem('AG_GEMINI_KEY');
+    try {
+      const res = await window.AGENCIA.chatSimulator.enviarMensagem(this._chatSessao, msg, apiKey);
+      typing.style.visibility = 'hidden';
+      
+      this._addChatBubble('cliente', res.respostaCliente);
+      this._atualizarStatsChat(res);
+
+      if (res.encerrado) {
+        this.encerrarChatSessao();
+      }
+    } catch (err) {
+      typing.style.visibility = 'hidden';
+      this._addChatBubble('sistema', "Erro na comunicação: " + err.message);
+    }
+  },
+
+  _addChatBubble: function(tipo, texto) {
+    const area = document.getElementById('chat-messages');
+    if (!area) return;
+
+    const b = document.createElement('div');
+    b.className = 'chat-bubble ' + tipo;
+    
+    let style = "max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; margin-bottom: 4px; ";
+    if (tipo === 'cliente') {
+      style += "align-self: flex-start; background: var(--bg-elevated); color: var(--text-1); border-bottom-left-radius: 2px;";
+    } else if (tipo === 'agente') {
+      style += "align-self: flex-end; background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue-border); border-bottom-right-radius: 2px;";
+    } else {
+      style += "align-self: center; background: transparent; color: var(--text-3); font-size: 11px; font-style: italic;";
+    }
+    b.setAttribute('style', style);
+    b.textContent = texto;
+
+    area.appendChild(b);
+    area.scrollTop = area.scrollHeight;
+  },
+
+  _atualizarStatsChat: function(res) {
+    const turnoEl = document.getElementById('chat-turno');
+    const barEl = document.getElementById('chat-score-bar');
+    
+    const max = window.AGENCIA.BAL.chatSimulator.maxTurnos;
+    turnoEl.textContent = `Turno ${res.turnoAtual}/${max}`;
+    
+    // Converte score (-50 a +50) para % (0 a 100)
+    const pct = Math.max(0, Math.min(100, 50 + (res.scoreAtual)));
+    barEl.style.width = pct + '%';
+    barEl.style.background = pct > 60 ? 'var(--green)' : pct < 40 ? 'var(--red)' : 'var(--amber)';
+  },
+
+  encerrarChatSessao: function() {
+    if (!this._chatSessao) return;
+    
+    const sessao = this._chatSessao;
+    const res = window.AGENCIA.chatSimulator.encerrarChat(sessao);
+    
+    const input = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('btn-chat-send');
+    if (input) input.disabled = true;
+    if (sendBtn) sendBtn.disabled = true;
+
+    // Mostra resultado final no próprio chat
+    this._addChatBubble('sistema', "--- NEGOCIAÇÃO ENCERRADA ---");
+    
+    const area = document.getElementById('chat-messages');
+    const resultCard = document.createElement('div');
+    resultCard.className = 'card fade-in';
+    resultCard.style.marginTop = '20px';
+    resultCard.style.border = '1px solid ' + (res.decisao === 'ganho' ? 'var(--green)' : res.decisao === 'objecao' ? 'var(--amber)' : 'var(--red)');
+    
+    resultCard.innerHTML = `
+      <div style="text-align: center;">
+        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-3); margin-bottom: 5px;">Decisão Final</div>
+        <div style="font-size: 18px; font-weight: 800; color: ${res.decisao === 'ganho' ? 'var(--green)' : res.decisao === 'objecao' ? 'var(--amber)' : 'var(--red)'}; margin-bottom: 10px;">
+          ${res.decisao === 'ganho' ? '🎉 VENDA FECHADA!' : res.decisao === 'objecao' ? '⚠️ OBJEÇÃO GERADA' : '❌ NEGÓCIO PERDIDO'}
+        </div>
+        <div style="font-size: 13px; color: var(--text-2); margin-bottom: 15px; font-style: italic;">
+          "${res.mensagemCliente}"
+        </div>
+        <div style="font-size: 11px; background: var(--bg-base); padding: 10px; border-radius: 6px; text-align: left; color: var(--text-2);">
+          <strong>Dica:</strong> ${this._gerarDicaEducativa(sessao, res)}
+        </div>
+        <button class="btn-start" style="margin-top: 15px; background: var(--bg-elevated); color: var(--text-1);" 
+          onclick="window.AGENCIA.ui._aplicarResultadoChat()">Finalizar e Sair</button>
+      </div>
+    `;
+    area.appendChild(resultCard);
+    area.scrollTop = area.scrollHeight;
+  },
+
+  _aplicarResultadoChat: function() {
+    const sessao = this._chatSessao;
+    if (!sessao) return;
+
+    const res = window.AGENCIA.chatSimulator.encerrarChat(sessao);
+    const s = window.AGENCIA.getState();
+    const lead = sessao.lead;
+
+    // Aplica no pipeline conforme o resultado da decisão final do clientAI
+    if (res.decisao === 'ganho') {
+      window.AGENCIA.loop.logEvento(s, 'sucesso', `🎉 Chat: ${lead.nome} fechou o pacote!`);
+      s.kpis.totalVendas++;
+      s.agencia.reputacao = Math.min(100, s.agencia.reputacao + 1);
+      if (window.AGENCIA.economy) window.AGENCIA.economy.registrarVendaNoCaixa(lead, s.tempo.dia);
+      s.pipeline = s.pipeline.filter(l => l.id !== lead.id);
+    } else if (res.decisao === 'perdido') {
+      window.AGENCIA.loop.logEvento(s, 'erro', `❌ Chat: ${lead.nome} desistiu da compra.`);
+      s.perdas.push({ ...lead, motivoPerda: res.motivo || 'Desistência no chat', diaPerda: s.tempo.dia });
+      s.kpis.totalLeadsPerdidos++;
+      s.pipeline = s.pipeline.filter(l => l.id !== lead.id);
+    } else if (res.decisao === 'objecao') {
+      lead.status = 'objecao';
+      lead.objecaoAtual = res.mensagemCliente;
+      window.AGENCIA.loop.logEvento(s, 'aviso', `⚠️ Chat: ${lead.nome} ainda tem dúvidas.`);
+    }
+
+    const modal = document.getElementById('modal-chat-simulator');
+    if (modal) modal.remove();
+    this._chatSessao = null;
+    this.renderizarPainelAtivo();
+  },
+
+  _gerarDicaEducativa: function(sessao, res) {
+    const score = sessao.scoreAcumulado;
+    const perfil = sessao.lead.perfil;
+    
+    if (res.decisao === 'ganho') {
+      if (score > 30) return "Excelente condução! Você transmitiu segurança e autoridade.";
+      return "Você fechou, mas a margem de confiança foi apertada. Poderia ter explorado mais as dores do cliente.";
+    }
+    
+    if (perfil === 'cacador_preco') return "Com esse perfil, você precisa ancorar o valor nos diferenciais antes de falar de preço.";
+    if (perfil === 'inseguro') return "Clientes inseguros precisam de garantias explícitas e prova social (reputação).";
+    if (perfil === 'apressado') return "Seja mais direto. Respostas longas ou demora irritam esse perfil.";
+    if (perfil === 'detalhista') return "Forneça dados precisos. Respostas genéricas fazem você parecer amador para ele.";
+    
+    return "Tente ouvir mais as necessidades do cliente antes de empurrar a venda.";
   },
 
   // Atualiza topbar

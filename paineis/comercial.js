@@ -156,7 +156,11 @@ window.AGENCIA.painelComercial = (function() {
       btn.addEventListener('click', (e) => { atenderLead(e.target.getAttribute('data-id')); });
     });
     el.querySelectorAll('.btn-descartar').forEach(btn => {
-      btn.addEventListener('click', (e) => { descartarLead(e.target.getAttribute('data-id')); });
+      btn.addEventListener('click', (e) => {
+        const id = e.target.getAttribute('data-id');
+        const lead = s.leads.find(l => l.id === id);
+        if (lead) abrirConfirmacaoDescarte(id, 'inbox', lead.nome, el);
+      });
     });
 
     // Injeta ações específicas para o pipeline
@@ -166,6 +170,9 @@ window.AGENCIA.painelComercial = (function() {
         if (!container) return;
         
         let actsHTML = '';
+        const hasApiKey = !!localStorage.getItem('AG_GEMINI_KEY');
+        const chatBtn = hasApiKey ? `<button class="btn-sm btn-negociar-chat" data-id="${lead.id}" style="background:var(--blue-bg); color:var(--blue); border-color:var(--blue-border); margin-top:4px; width:100%;">Negociar via Chat (Brasil Real)</button>` : '';
+
         if (lead.status === 'qualificando') {
           actsHTML = `
             <button class="btn-sm btn-qualificar" data-id="${lead.id}" style="background:var(--blue); color:#fff; border-color:var(--blue)">Qualificar (1 PA)</button>
@@ -179,11 +186,13 @@ window.AGENCIA.painelComercial = (function() {
         } else if (lead.status === 'cotacao_enviada') {
           actsHTML = `
             <button class="btn-sm btn-ver-resposta" data-id="${lead.id}" style="background:var(--blue); color:#fff; border-color:var(--blue)">Ver resposta do cliente</button>
+            ${chatBtn}
             <button class="btn-sm btn-descartar-pipe" data-id="${lead.id}">Descartar</button>
           `;
         } else if (lead.status === 'objecao') {
           actsHTML = `
             <button class="btn-sm btn-followup" data-id="${lead.id}" style="background:var(--amber); color:#000; border-color:var(--amber)">Responder Objeção</button>
+            ${chatBtn}
             <button class="btn-sm btn-descartar-pipe" data-id="${lead.id}">Descartar</button>
           `;
         }
@@ -200,8 +209,9 @@ window.AGENCIA.painelComercial = (function() {
       });
       el.querySelectorAll('.btn-descartar-pipe').forEach(btn => {
         btn.addEventListener('click', (e) => { 
-          window.AGENCIA.pipeline.descartar(e.target.getAttribute('data-id'), 'Descartado manualmente');
-          render(el);
+          const id = e.target.getAttribute('data-id');
+          const lead = s.pipeline.find(l => l.id === id);
+          if (lead) abrirConfirmacaoDescarte(id, 'pipeline', lead.nome, el);
         });
       });
       el.querySelectorAll('.btn-cotar').forEach(btn => {
@@ -226,6 +236,12 @@ window.AGENCIA.painelComercial = (function() {
           if (lead) {
             abrirModalObjecao(lead, lead.objecaoAtual, el);
           }
+        });
+      });
+      el.querySelectorAll('.btn-negociar-chat').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.target.getAttribute('data-id');
+          window.AGENCIA.ui.abrirModalChat(id);
         });
       });
     }
@@ -352,6 +368,46 @@ window.AGENCIA.painelComercial = (function() {
     
     window.AGENCIA.loop.logEvento(s, 'info', `🗑️ Lead ${lead.nome} descartado.`);
     window.AGENCIA.ui.renderizarPainelAtivo();
+  }
+
+  function abrirConfirmacaoDescarte(id, tipo, nome, parentEl) {
+    const modalId = 'modal-confirm-descarte';
+    let old = document.getElementById(modalId);
+    if(old) old.remove();
+
+    const el = document.createElement('div');
+    el.id = modalId;
+    el.className = 'modal-overlay';
+    el.style.zIndex = '1100'; // Garantir que fique acima de outros overlays
+    el.innerHTML = `
+      <div class="modal-box fade-in" style="max-width: 360px;">
+        <div class="modal-header" style="border-color: var(--red);">
+          <div class="modal-tipo" style="color: var(--red);">⚠️ CONFIRMAR DESCARTE</div>
+          <div class="modal-titulo">Descartar ${nome}?</div>
+        </div>
+        <div class="modal-body">
+          <p style="font-size: 13px; color: var(--text-2); line-height: 1.6; margin-bottom: 20px;">
+            Esta ação não pode ser desfeita. O lead será movido para o histórico de perdas e sua reputação comercial pode ser afetada a longo prazo.
+          </p>
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+             <button class="btn-sm" id="btn-cancel-descarte" style="background: var(--surface); color: var(--text);">Cancelar</button>
+             <button class="btn-start" id="btn-confirm-descarte" style="background: var(--red); border-color: var(--red); color: white; padding: 8px 16px; font-size: 12px;">Sim, descartar</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(el);
+
+    document.getElementById('btn-cancel-descarte').addEventListener('click', () => el.remove());
+    document.getElementById('btn-confirm-descarte').addEventListener('click', () => {
+      if (tipo === 'inbox') {
+        descartarLead(id);
+      } else {
+        window.AGENCIA.pipeline.descartar(id, 'Descartado manualmente');
+      }
+      el.remove();
+      render(parentEl);
+    });
   }
 
   function avaliarEProcessarDecisao(lead, parentEl) {
