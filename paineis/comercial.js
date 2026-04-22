@@ -24,6 +24,9 @@ window.AGENCIA.painelComercial = (function() {
       </div>
     `;
 
+    const totalLeadsProcessados = (s.kpis.totalVendas || 0) + (s.kpis.totalLeadsPerdidos || 0);
+    const taxaConv = totalLeadsProcessados > 0 ? ((s.kpis.totalVendas / totalLeadsProcessados) * 100).toFixed(1) + '%' : '0.0%';
+
     // KPIs Comerciais
     html += `
       <div class="stats-row fade-in" style="margin-bottom: 20px;">
@@ -33,11 +36,11 @@ window.AGENCIA.painelComercial = (function() {
         </div>
         <div class="stat-tile">
           <div class="stat-tile-label">Canais Ativos</div>
-          <div class="stat-tile-value b">${s.canaisAtivos.length}</div>
+          <div class="stat-tile-value b">${s.canaisAtivos ? s.canaisAtivos.length : 0}</div>
         </div>
         <div class="stat-tile">
           <div class="stat-tile-label">Taxa Conv. Média</div>
-          <div class="stat-tile-value">—</div>
+          <div class="stat-tile-value">${taxaConv}</div>
         </div>
       </div>
     `;
@@ -168,12 +171,12 @@ window.AGENCIA.painelComercial = (function() {
           `;
         } else if (lead.status === 'cotacao_enviada') {
           actsHTML = `
-            <button class="btn-sm btn-simular" data-id="${lead.id}">Simular Resposta (F4 Stub)</button>
+            <button class="btn-sm btn-ver-resposta" data-id="${lead.id}" style="background:var(--blue); color:#fff; border-color:var(--blue)">Ver resposta do cliente</button>
             <button class="btn-sm btn-descartar-pipe" data-id="${lead.id}">Descartar</button>
           `;
         } else if (lead.status === 'objecao') {
           actsHTML = `
-            <button class="btn-sm btn-followup" data-id="${lead.id}" style="background:var(--amber); color:#000; border-color:var(--amber)">Follow-up (1 PA)</button>
+            <button class="btn-sm btn-followup" data-id="${lead.id}" style="background:var(--amber); color:#000; border-color:var(--amber)">Responder Objeção</button>
             <button class="btn-sm btn-descartar-pipe" data-id="${lead.id}">Descartar</button>
           `;
         }
@@ -200,23 +203,22 @@ window.AGENCIA.painelComercial = (function() {
           abrirModalCotacao(id, el);
         });
       });
-      el.querySelectorAll('.btn-simular').forEach(btn => {
+      el.querySelectorAll('.btn-ver-resposta').forEach(btn => {
         btn.addEventListener('click', (e) => { 
           const id = e.target.getAttribute('data-id');
           const lead = s.pipeline.find(l => l.id === id);
           if(lead) {
-            // Chama a função interna (nós a expusemos para o botão, ou reimplementamos aqui)
-            // Em F4, como ela estava oculta, vou expor _avaliarMock ou recriar aqui.
-            if(window.AGENCIA.pipeline._avaliarMock) {
-              window.AGENCIA.pipeline._avaliarMock(s, lead);
-            }
+            avaliarEProcessarDecisao(lead, el);
           }
         });
       });
       el.querySelectorAll('.btn-followup').forEach(btn => {
         btn.addEventListener('click', (e) => { 
-          window.AGENCIA.pipeline.realizarFollowUp(e.target.getAttribute('data-id'));
-          render(el);
+          const id = e.target.getAttribute('data-id');
+          const lead = s.pipeline.find(l => l.id === id);
+          if (lead) {
+            abrirModalObjecao(lead, lead.objecaoAtual, el);
+          }
         });
       });
     }
@@ -343,6 +345,115 @@ window.AGENCIA.painelComercial = (function() {
     
     window.AGENCIA.loop.logEvento(s, 'info', `🗑️ Lead ${lead.nome} descartado.`);
     window.AGENCIA.ui.renderizarPainelAtivo();
+  }
+
+  function avaliarEProcessarDecisao(lead, parentEl) {
+    const s = window.AGENCIA.getState();
+    const res = window.AGENCIA.clientAI.avaliarCotacao(lead, lead.cotacao, s.agencia, s);
+    
+    if (res.decisao === 'ganho') {
+      window.AGENCIA.loop.logEvento(s, 'sucesso', `🎉 ${lead.nome} fechou o pacote! "${res.mensagemCliente}"`);
+      s.kpis.totalVendas++;
+      s.agencia.reputacao = Math.min(100, s.agencia.reputacao + 1);
+      
+      // Contabilidade (simplificada para F5)
+      const receita = lead.cotacao.valorTotal;
+      const custo = lead.cotacao.custoLiquido;
+      s.caixa.saldo += (receita - custo);
+      
+      s.pipeline = s.pipeline.filter(l => l.id !== lead.id);
+      window.AGENCIA.ui.renderizarPainelAtivo();
+    } else if (res.decisao === 'perdido') {
+      window.AGENCIA.loop.logEvento(s, 'erro', `❌ ${lead.nome} recusou a cotação: "${res.mensagemCliente}"`);
+      s.perdas.push({ ...lead, motivoPerda: res.motivo, diaPerda: s.tempo.dia });
+      s.kpis.totalLeadsPerdidos++;
+      
+      s.pipeline = s.pipeline.filter(l => l.id !== lead.id);
+      window.AGENCIA.ui.renderizarPainelAtivo();
+    } else if (res.decisao === 'objecao') {
+      lead.status = 'objecao';
+      lead.objecaoAtual = res.mensagemCliente;
+      window.AGENCIA.loop.logEvento(s, 'aviso', `⚠️ ${lead.nome} fez uma objeção: "${res.mensagemCliente}"`);
+      
+      abrirModalObjecao(lead, res.mensagemCliente, parentEl);
+    }
+  }
+
+  function abrirModalObjecao(lead, mensagemCliente, parentEl) {
+    const s = window.AGENCIA.getState();
+    const objId = lead.objecaoId;
+    const objData = window.AGENCIA.BAL.objecoes.find(o => o.id === objId);
+    
+    if (!objData) return;
+
+    const modalId = 'modal-objecao';
+    let old = document.getElementById(modalId);
+    if(old) old.remove();
+
+    const el = document.createElement('div');
+    el.id = modalId;
+    el.className = 'modal-overlay';
+    
+    let respostasHtml = objData.respostas.map(r => `
+      <button class="btn-start btn-resposta-obj" data-resp="${r.id}" style="margin-bottom:8px; width:100%; text-align:left; background:var(--bg-card); border-color:var(--border); color:var(--text); padding:10px;">
+        ${r.label} <span style="color:var(--amber); font-weight:bold;">(1 PA)</span>
+      </button>
+    `).join('');
+
+    el.innerHTML = `
+      <div class="modal-box fade-in">
+        <div class="modal-header" style="border-color:var(--amber);">
+          <div class="modal-tipo" style="color:var(--amber);">NOVA OBJEÇÃO</div>
+          <div class="modal-titulo">Cliente: ${lead.nome}</div>
+        </div>
+        <div class="modal-body">
+          <div style="font-style:italic; padding:12px; background:var(--bg-body); border-left:4px solid var(--amber); margin-bottom:16px;">
+            "${mensagemCliente}"
+          </div>
+          <p style="font-size:12px; color:var(--text-2); margin-bottom:12px;">Como você deseja responder?</p>
+          ${respostasHtml}
+        </div>
+        <div class="modal-footer" style="gap:8px;">
+          <button class="btn-sm" id="btn-cancel-obj">Decidir depois</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(el);
+
+    document.getElementById('btn-cancel-obj').addEventListener('click', () => {
+      el.remove();
+      render(parentEl);
+    });
+
+    el.querySelectorAll('.btn-resposta-obj').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const respBtn = e.target.closest('.btn-resposta-obj');
+        if (!window.AGENCIA.loop.usarPA(1, `Responder objeção de ${lead.nome}`)) {
+          return;
+        }
+        
+        const respId = respBtn.getAttribute('data-resp');
+        const novoRes = window.AGENCIA.clientAI.processarRespostaObjecao(lead, lead.cotacao, s.agencia, s, respId);
+        
+        el.remove();
+        
+        if (novoRes.decisao === 'ganho') {
+          window.AGENCIA.loop.logEvento(s, 'sucesso', `🎉 Contornou objeção! ${lead.nome} fechou o pacote!`);
+          s.kpis.totalVendas++;
+          s.agencia.reputacao = Math.min(100, s.agencia.reputacao + 1);
+          s.caixa.saldo += (lead.cotacao.valorTotal - lead.cotacao.custoLiquido);
+          s.pipeline = s.pipeline.filter(l => l.id !== lead.id);
+        } else {
+          window.AGENCIA.loop.logEvento(s, 'erro', `❌ Objeção não contornada. ${lead.nome} não quis fechar. "${novoRes.mensagemCliente}"`);
+          s.perdas.push({ ...lead, motivoPerda: novoRes.motivo || 'Nao contornou objecao', diaPerda: s.tempo.dia });
+          s.kpis.totalLeadsPerdidos++;
+          s.pipeline = s.pipeline.filter(l => l.id !== lead.id);
+        }
+        
+        window.AGENCIA.ui.renderizarPainelAtivo();
+      });
+    });
   }
 
   return { render };

@@ -93,70 +93,12 @@ window.AGENCIA.pipeline = (function() {
     };
 
     moverLead(lead, 'cotacao_enviada');
-    window.AGENCIA.loop.logEvento(s, 'acao', `📄 Cotação de R$ ${cotacaoArgs.valorTotal.toLocaleString('pt-BR')} enviada para ${lead.nome}.`);
+    window.AGENCIA.loop.logEvento(s, 'acao', `📄 Cotação de R$ ${cotacaoArgs.valorTotal.toLocaleString('pt-BR')} enviada para ${lead.nome}. Aguardando resposta.`);
     
-    // No F4, como não temos F5 ClientAI ainda, agendamos uma avaliação "mock" ou o jogador avança manualmente.
-    // Vamos simular a IA decidindo no mesmo dia ou no próximo.
-    if (window.AGENCIA.clientAI && window.AGENCIA.clientAI.avaliarCotacao) {
-       // F5 integrado
-    } else {
-       // Stub de avaliação para F4 funcionar (50% de chance de aceitar se fee < 200, etc)
-       setTimeout(() => _avaliarMock(s, lead), 100);
-    }
-
     return true;
   }
 
-  // Mock provisório para transição de cotação_enviada em F4
-  function _avaliarMock(s, lead) {
-    const fee = lead.cotacao.fee;
-    if (fee > 300) {
-      moverLead(lead, 'objecao');
-      lead.objecaoAtual = "Achei o valor da sua taxa (fee) muito alto.";
-      window.AGENCIA.loop.logEvento(s, 'aviso', `⚠️ ${lead.nome} fez objeção: taxa alta.`);
-    } else if (fee > 150) {
-      if (Math.random() > 0.5) {
-        moverLead(lead, 'ganho');
-        _registrarGanho(s, lead);
-      } else {
-        moverLead(lead, 'perdido');
-        _registrarPerda(s, lead, 'Achou caro');
-      }
-    } else {
-      moverLead(lead, 'ganho');
-      _registrarGanho(s, lead);
-    }
-    window.AGENCIA.ui.renderizarPainelAtivo();
-  }
 
-  // Ação 3: Follow-up (1 PA)
-  function realizarFollowUp(id) {
-    const s = window.AGENCIA.getState();
-    const lead = getLead(id);
-    if (!lead || !['cotacao_enviada', 'objecao'].includes(lead.status)) return false;
-
-    if (!window.AGENCIA.loop.usarPA(1, `Follow-up com ${lead.nome}`)) {
-      return false;
-    }
-
-    lead.confianca = Math.min(100, lead.confianca + 10);
-    window.AGENCIA.loop.logEvento(s, 'acao', `📞 Follow-up realizado com ${lead.nome}. Confiança subiu para ${Math.round(lead.confianca)}.`);
-
-    // No F4, move de volta para avaliação ou tenta reaquecer
-    if (lead.status === 'objecao') {
-      moverLead(lead, 'followup');
-      // mock chance de reverter
-      if (Math.random() > 0.4) {
-        moverLead(lead, 'ganho');
-        _registrarGanho(s, lead);
-      } else {
-        moverLead(lead, 'perdido');
-        _registrarPerda(s, lead, 'Não aceitou contra-proposta');
-      }
-    }
-
-    return true;
-  }
 
   // Utilitário para Perda
   function descartar(id, motivo) {
@@ -231,7 +173,6 @@ window.AGENCIA.pipeline = (function() {
   return {
     qualificar,
     enviarCotacao,
-    realizarFollowUp,
     descartar,
     verificarExpiracoesDiarias
   };
