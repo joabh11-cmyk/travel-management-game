@@ -1,3 +1,8 @@
+// paineis/pessoas.js — F8
+window.AGENCIA = window.AGENCIA || {};
+
+window.AGENCIA.painelPessoas = {
+
   contratarPlanoJuridico: function(planoId) {
     const s = window.AGENCIA.getState();
     const BAL = window.AGENCIA.BAL;
