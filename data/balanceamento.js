@@ -487,7 +487,7 @@ window.AGENCIA.BAL = {
   chatSimulator: {
     maxTurnos: 5,
     minTurnos: 3,
-    modeloGemini: 'gemini-1.5-flash',   // gratuito e rápido
+    modeloGemini: 'gemini-2.0-flash-lite',   // gratuito e estável
     temperaturaGemini: 0.85,             // mais variado e humano
     maxTokensResposta: 150,              // respostas curtas
     penalizacaoRespostaLonga: -3,        // score se jogador mandar > 200 chars com apressado
