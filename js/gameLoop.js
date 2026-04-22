@@ -189,6 +189,11 @@ window.AGENCIA.loop = (function() {
     const totalSaidas   = saidas.reduce(function(a, e) { return a + e.valor; }, 0);
     const resultado     = totalEntradas - totalSaidas;
 
+    // Leads/vendas da semana
+    const vendasSemana = (s.vendas || []).filter(v => v.diaFechamento >= diaInicio && v.diaFechamento <= diaFim).length;
+    const perdasSemana = (s.perdas || []).filter(p => p.dia >= diaInicio && p.dia <= diaFim).length;
+    const leadsGerados = (s.kpis.totalLeadsRecebidos || 0); // Acumulado (simplificado)
+
     // Ajuste de reputação
     const ajusteRep = resultado >= 0 ? 1 : -1;
     s.agencia.reputacao = Math.max(0, Math.min(100, s.agencia.reputacao + ajusteRep));
@@ -196,6 +201,26 @@ window.AGENCIA.loop = (function() {
     // KPI
     if (totalEntradas > s.kpis.melhorSemanaReceita) {
       s.kpis.melhorSemanaReceita = totalEntradas;
+    }
+
+    // Margem da semana
+    const margemPct = totalEntradas > 0 ? ((resultado / totalEntradas) * 100).toFixed(1) : '0.0';
+
+    // Alerta e recomendação
+    let alertaPrincipal = '';
+    let recomendacao    = '';
+    if (resultado < 0) {
+      alertaPrincipal = '🔴 Semana com resultado negativo. Verifique custos fixos e margens das vendas.';
+      recomendacao    = 'Priorize fechar pelo menos 1 venda de maior margem na próxima semana para estabilizar o caixa.';
+    } else if (vendasSemana === 0) {
+      alertaPrincipal = '⚠️ Semana sem conversão. Custo fixo continua consumindo o caixa.';
+      recomendacao    = 'Revise o pipeline e identifique leads prontos para fechar. Considere follow-up ativo.';
+    } else if (parseFloat(margemPct) < 10) {
+      alertaPrincipal = '⚠️ Margem baixa — você está vendendo, mas quase no prejuízo.';
+      recomendacao    = 'Evite ceder descontos e revise as cotações. Aumente o fee nos próximos pacotes.';
+    } else {
+      alertaPrincipal = '✅ Semana positiva. Saldo crescendo.';
+      recomendacao    = resultado > 300 ? 'Excelente resultado! Continue qualificando leads e avance no pipeline.' : 'Bom resultado. Mantenha o ritmo e atente ao burn rate.';
     }
 
     // Salvar relatório
@@ -206,15 +231,20 @@ window.AGENCIA.loop = (function() {
     });
 
     return {
-      tipo:        'semanal',
-      titulo:      `Semana ${semana} — Fechamento`,
-      receitas:    totalEntradas,
-      despesas:    totalSaidas,
-      resultado:   resultado,
-      saldo:       s.caixa.saldo,
-      ajusteRep:   ajusteRep,
-      reputacao:   s.agencia.reputacao,
-      fadiga:      s.agencia.fadiga,
+      tipo:             'semanal',
+      titulo:           `Semana ${semana} — Fechamento`,
+      receitas:         totalEntradas,
+      despesas:         totalSaidas,
+      resultado:        resultado,
+      margemPct:        margemPct,
+      saldo:            s.caixa.saldo,
+      ajusteRep:        ajusteRep,
+      reputacao:        s.agencia.reputacao,
+      fadiga:           s.agencia.fadiga,
+      vendasSemana:     vendasSemana,
+      perdasSemana:     perdasSemana,
+      alertaPrincipal:  alertaPrincipal,
+      recomendacao:     recomendacao,
     };
   }
 

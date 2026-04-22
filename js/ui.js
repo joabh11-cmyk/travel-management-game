@@ -389,17 +389,45 @@ window.AGENCIA.ui = {
   // Modal de fechamento semanal / mensal
   // ----------------------------------------------------------
   mostrarModal: function(dados) {
-    // Remove modal anterior se existir
     const old = document.getElementById('modal-overlay');
     if (old) old.remove();
 
     const isMensal = dados.tipo === 'mensal';
     const resCor   = dados.resultado >= 0 ? 'g' : 'r';
     const sinal    = dados.resultado >= 0 ? '+' : '';
+    const ui       = this;
 
     const el = document.createElement('div');
     el.id = 'modal-overlay';
     el.className = 'modal-overlay';
+
+    const extraSemanal = !isMensal ? `
+      <div style="margin:14px 0; padding:12px; background:rgba(99,102,241,0.06); border-radius:8px; border-left:3px solid var(--blue);">
+        <div style="font-size:12px; color:var(--text-2); font-weight:700; letter-spacing:.5px; margin-bottom:6px;">ALERTA DA SEMANA</div>
+        <div style="font-size:13px; color:var(--text);">${dados.alertaPrincipal || '—'}</div>
+      </div>
+      <div style="margin:0 0 14px; padding:12px; background:rgba(34,197,94,0.05); border-radius:8px; border-left:3px solid var(--green);">
+        <div style="font-size:12px; color:var(--text-2); font-weight:700; letter-spacing:.5px; margin-bottom:6px;">RECOMENDAÇÃO</div>
+        <div style="font-size:13px; color:var(--text);">${dados.recomendacao || '—'}</div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:14px;">
+        <div class="stat-tile"><div class="stat-tile-label">Vendas</div><div class="stat-tile-value g">${dados.vendasSemana || 0}</div></div>
+        <div class="stat-tile"><div class="stat-tile-label">Perdidas</div><div class="stat-tile-value r">${dados.perdasSemana || 0}</div></div>
+        <div class="stat-tile"><div class="stat-tile-label">Margem</div><div class="stat-tile-value ${parseFloat(dados.margemPct||0)>=10?'g':'r'}">${dados.margemPct || '0.0'}%</div></div>
+      </div>
+    ` : `
+      <div style="margin:14px 0; padding:12px; background:rgba(99,102,241,0.06); border-radius:8px;">
+        <div style="font-size:12px; color:var(--text-2); font-weight:700; letter-spacing:.5px; margin-bottom:6px;">CICLO MENSAL CONCLUÍDO</div>
+        <div style="font-size:13px; color:var(--text); line-height:1.6;">
+          ${dados.resultado >= 0 ? '✅ Mês encerrado com saldo positivo. Você está construindo a base da agência.' : '🔴 Mês no vermelho. Revise custos e taxa de conversão antes do próximo ciclo.'}
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">
+        <div class="stat-tile"><div class="stat-tile-label">Total Vendas</div><div class="stat-tile-value g">${dados.totalVendas || 0}</div></div>
+        <div class="stat-tile"><div class="stat-tile-label">Fase Atual</div><div class="stat-tile-value b">Sobrevivência</div></div>
+      </div>
+    `;
+
     el.innerHTML = `
       <div class="modal-box fade-in">
         <div class="modal-header">
@@ -407,36 +435,38 @@ window.AGENCIA.ui = {
           <div class="modal-titulo">${dados.titulo}</div>
         </div>
         <div class="modal-body">
-          <div class="stats-row">
+          <div class="stats-row" style="margin-bottom:14px;">
             <div class="stat-tile">
               <div class="stat-tile-label">Receitas</div>
-              <div class="stat-tile-value g">${this._brl(dados.receitas)}</div>
+              <div class="stat-tile-value g">${ui._brl(dados.receitas)}</div>
             </div>
             <div class="stat-tile">
               <div class="stat-tile-label">Despesas</div>
-              <div class="stat-tile-value r">${this._brl(dados.despesas)}</div>
+              <div class="stat-tile-value r">${ui._brl(dados.despesas)}</div>
             </div>
             <div class="stat-tile">
               <div class="stat-tile-label">Resultado</div>
-              <div class="stat-tile-value ${resCor}">${sinal}${this._brl(dados.resultado)}</div>
+              <div class="stat-tile-value ${resCor}">${sinal}${ui._brl(dados.resultado)}</div>
             </div>
             <div class="stat-tile">
               <div class="stat-tile-label">Saldo Atual</div>
-              <div class="stat-tile-value">${this._brl(dados.saldo)}</div>
+              <div class="stat-tile-value">${ui._brl(dados.saldo)}</div>
             </div>
           </div>
+          ${extraSemanal}
           <div class="modal-linha">
             <span>Reputação</span>
             <span class="${dados.ajusteRep >= 0 ? 'g' : 'r'}">${dados.reputacao}/100 (${dados.ajusteRep >= 0 ? '+' : ''}${dados.ajusteRep || 0})</span>
           </div>
           <div class="modal-linha">
-            <span>Fadiga do Dono</span>
+            <span>Fadiga do Fundador</span>
             <span class="${dados.fadiga >= 80 ? 'r' : 'a'}">${Math.round(dados.fadiga)}/100</span>
           </div>
-          ${isMensal ? `<div class="modal-linha"><span>Total de Vendas</span><span>${dados.totalVendas}</span></div>` : ''}
         </div>
         <div class="modal-footer">
-          <button class="btn-start" onclick="document.getElementById('modal-overlay').remove()" style="padding:10px 28px;">Continuar →</button>
+          <button class="btn-start" onclick="document.getElementById('modal-overlay').remove()" style="padding:10px 28px;">
+            Continuar →
+          </button>
         </div>
       </div>
     `;
