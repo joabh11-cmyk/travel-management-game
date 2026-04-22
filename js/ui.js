@@ -357,7 +357,7 @@ window.AGENCIA.ui = {
   // ----------------------------------------------------------
   renderizarPainelAtivo: function() {
     const painel = this.painelAtivo;
-    if (!painel) {
+    if (!painel || painel === 'principal') {
       // Re-render dashboard overview
       const s   = window.AGENCIA.getState();
       if (!s) return;
@@ -480,6 +480,11 @@ window.AGENCIA.ui = {
     const link = document.querySelector(`[data-painel="${painel}"]`);
     if (link) link.classList.add('ativo');
 
+    if (painel === 'principal') {
+      this.renderizarPainelAtivo();
+      return;
+    }
+
     const map = {
       caixa:       window.AGENCIA.painelCaixa,
       comercial:   window.AGENCIA.painelComercial,
@@ -496,7 +501,9 @@ window.AGENCIA.ui = {
   // Helpers
   // ----------------------------------------------------------
   _navLinks: function() {
+    const pAtivo = this.painelAtivo || 'principal';
     return [
+      { id: 'principal',   icon: '🏠', label: 'Principal' },
       { id: 'caixa',       icon: '💰', label: 'Caixa' },
       { id: 'comercial',   icon: '📈', label: 'Comercial' },
       { id: 'operacional', icon: '⚙️', label: 'Operação' },
@@ -504,7 +511,7 @@ window.AGENCIA.ui = {
       { id: 'pessoas',     icon: '👥', label: 'Pessoas' },
       { id: 'mercado',     icon: '🌐', label: 'Mercado' },
     ].map(n => `
-      <button class="nav-link ${n.id === this.painelAtivo ? 'ativo' : ''}" data-painel="${n.id}">
+      <button class="nav-link ${n.id === pAtivo ? 'ativo' : ''}" data-painel="${n.id}">
         <span class="nav-icon">${n.icon}</span>
         ${n.label}
       </button>
