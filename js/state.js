@@ -48,6 +48,11 @@ window.AGENCIA.iniciarJogo = function(config) {
 
     // --- Canais ativos ---
     canaisAtivos: ['familiares_amigos', 'boca_a_boca', 'campanhas_internas'],
+    canaisMarketing: {
+      familiares_amigos: 'medio',
+      boca_a_boca: 'medio',
+      campanhas_internas: 'medio'
+    },
 
     // --- Pipeline comercial ---
     leads:    [],   // leads recebidos ainda não no pipeline

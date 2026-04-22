@@ -59,16 +59,6 @@ window.AGENCIA.economy = (function() {
       custoFixoDia += (BAL.custosFixos[k] / 30);
     }
     
-    // Custo dos canais ativos
-    let custoCanaisMensal = 0;
-    if (s.canaisAtivos) {
-      s.canaisAtivos.forEach(canalId => {
-        const canal = BAL.canais[canalId];
-        if (canal && canal.custoMensal) custoCanaisMensal += canal.custoMensal;
-      });
-    }
-    custoFixoDia += (custoCanaisMensal / 30);
-
     // Dificuldade modifier
     const dif = BAL.dificuldades[s.agencia.dificuldade];
     if (dif && dif.multiplicadorPunicao) {
@@ -77,9 +67,27 @@ window.AGENCIA.economy = (function() {
     
     s.caixa.saldo -= custoFixoDia;
     s.caixa.despesas += custoFixoDia;
-    
-    // Registra na aba caixa (opcional para F6, compatibiliza entradas/saídas do state se quiser)
     window.AGENCIA.registrarSaida('Custos fixos diários', custoFixoDia, 'fixo');
+
+    // 1.1 Custo de Marketing / Captação (F8)
+    let custoMktTotal = 0;
+    if (s.agencia.canaisMarketing) {
+      if (!s.kpis.custoMarketingPorCanal) s.kpis.custoMarketingPorCanal = {};
+      for (let cId in s.agencia.canaisMarketing) {
+        const int = s.agencia.canaisMarketing[cId];
+        const cfg = BAL.canais[cId];
+        if (cfg && cfg.custoPorIntensidade) {
+          const c = cfg.custoPorIntensidade[int] || 0;
+          custoMktTotal += c;
+          s.kpis.custoMarketingPorCanal[cId] = (s.kpis.custoMarketingPorCanal[cId] || 0) + c;
+        }
+      }
+    }
+    if (custoMktTotal > 0) {
+      s.caixa.saldo -= custoMktTotal;
+      s.caixa.despesas += custoMktTotal;
+      window.AGENCIA.registrarSaida('Marketing / Captação', custoMktTotal, 'marketing');
+    }
 
     // 2. Processar Receitas Agendadas para o dia atual
     if (s.caixa.receitasAgendadas) {

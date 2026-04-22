@@ -174,8 +174,13 @@ window.AGENCIA.BAL = {
       label:          'Família e Amigos',
       emoji:          '👨‍👩‍👧',
       tipo:           'organico',
-      custoMensal:    0,
-      leadsDia:       { min: 0.4, max: 0.8 },
+      custoPorIntensidade: { desligado: 0, baixo: 0, medio: 0, alto: 0 },
+      faixasLeads: {
+        desligado: { min: 0, max: 0 },
+        baixo:     { min: 0.1, max: 0.3 },
+        medio:     { min: 0.4, max: 0.8 },
+        alto:      { min: 0.6, max: 1.2 }
+      },
       confianca:      { min: 55, max: 80 },
       maturacao:      1,    // dias
       disponivelDia1: true,
@@ -184,8 +189,13 @@ window.AGENCIA.BAL = {
       label:          'Boca a Boca',
       emoji:          '🗣️',
       tipo:           'organico',
-      custoMensal:    0,
-      leadsDia:       { min: 0.3, max: 0.9 },
+      custoPorIntensidade: { desligado: 0, baixo: 0, medio: 0, alto: 0 },
+      faixasLeads: {
+        desligado: { min: 0, max: 0 },
+        baixo:     { min: 0.1, max: 0.4 },
+        medio:     { min: 0.3, max: 0.9 },
+        alto:      { min: 0.5, max: 1.5 }
+      },
       confianca:      { min: 40, max: 75 },
       maturacao:      3,
       disponivelDia1: true,
@@ -194,8 +204,13 @@ window.AGENCIA.BAL = {
       label:          'Campanhas Internas',
       emoji:          '📣',
       tipo:           'organico',
-      custoMensal:    50,
-      leadsDia:       { min: 0.5, max: 1.2 },
+      custoPorIntensidade: { desligado: 0, baixo: 2, medio: 5, alto: 15 }, // custo diário
+      faixasLeads: {
+        desligado: { min: 0, max: 0 },
+        baixo:     { min: 0.2, max: 0.5 },
+        medio:     { min: 0.5, max: 1.2 },
+        alto:      { min: 1.0, max: 2.5 }
+      },
       confianca:      { min: 25, max: 55 },
       maturacao:      2,
       disponivelDia1: true,

@@ -46,8 +46,11 @@ window.AGENCIA.leads = (function() {
       const canal = BAL.canais[canalId];
       if (!canal) return;
 
-      // Sorteia valor base do canal
-      const baseChance = canal.leadsDia.min + Math.random() * (canal.leadsDia.max - canal.leadsDia.min);
+      // Sorteia valor base do canal com base na intensidade (F8)
+      const intensidade = s.agencia.canaisMarketing ? (s.agencia.canaisMarketing[canalId] || 'medio') : 'medio';
+      const faixa = canal.faixasLeads ? (canal.faixasLeads[intensidade] || canal.leadsDia) : canal.leadsDia;
+      
+      const baseChance = faixa.min + Math.random() * (faixa.max - faixa.min);
       
       // Aplica multiplicadores
       let chanceFinal = baseChance * dif.multiplicadorLeads * mod.multiplicadorLeads * sazonalidade;
