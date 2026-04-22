@@ -838,8 +838,12 @@ body {
 .b { color: var(--blue); }
 
 /* Badge */
-.badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-sm); }
+.badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-sm); display: inline-block; }
 .badge-warn { background: var(--amber-bg); border: 1px solid var(--amber-border); color: var(--amber); }
+.badge-red { background: var(--red-bg); border: 1px solid var(--red); color: var(--red); }
+.badge-blue { background: var(--blue-bg); border: 1px solid var(--blue-border); color: var(--blue); }
+.badge-green { background: var(--green-bg); border: 1px solid var(--green); color: var(--green); }
+.badge-orange { background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; color: #f59e0b; }
 
 /* --- Comercial: Leads Inbox --- */
 .lead-item {

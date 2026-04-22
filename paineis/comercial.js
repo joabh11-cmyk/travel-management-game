@@ -107,6 +107,19 @@ window.AGENCIA.painelComercial = (function() {
       s.pipeline.forEach(lead => {
         const pInfo = (lead.qualificado && lead.revealPerfil) ? (BAL.perfis[lead.perfil] || {}) : { emoji: '👤' };
         
+        let perfilBadgeHtml = '';
+        if (lead.qualificado && lead.revealPerfil) {
+          const perfisMapping = {
+            'cacador_preco': { label: 'Caçador de Preço', class: 'badge-red' },
+            'inseguro':      { label: 'Inseguro',         class: 'badge-warn' },
+            'apressado':     { label: 'Apressado',        class: 'badge-orange' },
+            'detalhista':    { label: 'Detalhista',       class: 'badge-blue' },
+            'indicacao':     { label: 'Indicação',        class: 'badge-green' }
+          };
+          const p = perfisMapping[lead.perfil] || { label: lead.perfil, class: '' };
+          perfilBadgeHtml = `<div style="margin-bottom: 2px;"><span class="badge ${p.class}">${p.label}</span></div>`;
+        }
+
         let statusLabel = lead.status.toUpperCase();
         let statusClass = 'b';
         if (lead.status === 'objecao') { statusLabel = 'OBJEÇÃO'; statusClass = 'a'; }
@@ -127,6 +140,7 @@ window.AGENCIA.painelComercial = (function() {
               <span class="badge ${statusClass === 'a' ? 'badge-warn' : ''}">${statusLabel}</span>
             </div>
             <div class="lead-info" style="flex-direction: column; gap: 4px;">
+              ${perfilBadgeHtml}
               ${ticketHtml}
               ${urgenciaHtml}
               <div>Confiança: <strong>${lead.confianca}</strong>/100</div>
