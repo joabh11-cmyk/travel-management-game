@@ -170,6 +170,8 @@ window.AGENCIA.chatSimulator = (function() {
 
     // Conhecimento Produto
     let prod = turnos.filter(t => t.deltaScore > 0).length * 25;
+    if (lead.fichaConsultada) prod += 15;
+    if (sessao.cadernoConsultado) prod += 10;
     prod = Math.min(100, prod);
 
     // Gestão Objeção
@@ -201,7 +203,12 @@ window.AGENCIA.chatSimulator = (function() {
       
       const dicas = {
         escutaAtiva: { Iniciante: 'Pergunte sobre as necessidades antes de apresentar qualquer preço.', 'Em desenvolvimento': 'Bom começo. Tente entender o orçamento antes da proposta.', Competente: 'Você ouviu bem. Refine ainda mais com perguntas abertas.', Avançado: 'Escuta exemplar. O cliente se sentiu compreendido.' },
-        conhecimentoProduto: { Iniciante: 'Estude os detalhes do produto: inclusões, políticas, categorias.', 'Em desenvolvimento': 'Você soube parte. Treine as respostas sobre o que está incluso.', Competente: 'Bom domínio do produto. Continue aprofundando.', Avançado: 'O cliente percebeu que você conhece o que vende.' },
+        conhecimentoProduto: { 
+          Iniciante: 'Estude os detalhes do produto: inclusões, políticas, categorias.', 
+          'Em desenvolvimento': 'Você soube parte. Use a Ficha do Lead e o Caderno antes de negociar — eles têm os detalhes que o cliente vai perguntar.', 
+          Competente: 'Bom domínio do produto. Continue aprofundando.', 
+          Avançado: 'O cliente percebeu que você conhece o que vende.' 
+        },
         gestaoObjecao: { Iniciante: 'Quando o cliente resistir, não ceda imediatamente. Justifique o valor.', 'Em desenvolvimento': 'Você tentou responder à objeção. Trabalhe argumentos mais sólidos.', Competente: 'Boa recuperação. Você manteve o controle da negociação.', Avançado: 'Você transformou a objeção em oportunidade. Excelente.' },
         leituraPerfil: { Iniciante: 'Adapte o ritmo ao perfil. Apressados querem brevidade. Detalhistas querem profundidade.', 'Em desenvolvimento': 'Você ajustou um pouco. Pratique mais com esse perfil.', Competente: 'Bom ajuste de linguagem para o perfil do cliente.', Avançado: 'Você leu o perfil e se adaptou perfeitamente.' }
       };

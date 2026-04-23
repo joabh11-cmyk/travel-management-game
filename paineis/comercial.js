@@ -19,7 +19,7 @@ window.AGENCIA.painelComercial = (function() {
           <p class="section-subtitle">Gestão de Leads e Pipeline de Vendas</p>
         </div>
         <div class="header-actions">
-          <!-- Placeholder para ações comerciais genéricas (F4+) -->
+          <button class="btn-sm" id="btn-abrir-caderno" style="background:var(--bg-card); border-color:var(--border); font-weight:700;">📋 Caderno</button>
         </div>
       </div>
     `;
@@ -165,6 +165,14 @@ window.AGENCIA.painelComercial = (function() {
 
     el.innerHTML = html;
 
+    // Listener para o Caderno
+    const btnCaderno = el.querySelector('#btn-abrir-caderno');
+    if (btnCaderno) {
+      btnCaderno.addEventListener('click', () => {
+        if (window.AGENCIA.ui.abrirCadernoAgente) window.AGENCIA.ui.abrirCadernoAgente();
+      });
+    }
+
     // Listeners para Caixa de Entrada
     el.querySelectorAll('.btn-atender').forEach(btn => {
       btn.addEventListener('click', (e) => { atenderLead(e.target.getAttribute('data-id')); });
@@ -195,17 +203,20 @@ window.AGENCIA.painelComercial = (function() {
         } else if (lead.status === 'cotando') {
           actsHTML = `
             <button class="btn-sm btn-cotar" data-id="${lead.id}" style="background:var(--green); color:#fff; border-color:var(--green)">Criar Cotação (1 PA)</button>
+            <button class="btn-sm btn-ver-ficha" data-id="${lead.id}">Ver Ficha</button>
             <button class="btn-sm btn-descartar-pipe" data-id="${lead.id}">Descartar</button>
           `;
         } else if (lead.status === 'cotacao_enviada') {
           actsHTML = `
-            <button class="btn-sm btn-ver-resposta" data-id="${lead.id}" style="background:var(--blue); color:#fff; border-color:var(--blue)">Ver resposta do cliente</button>
+            <button class="btn-sm btn-ver-resposta" data-id="${lead.id}" style="background:var(--blue); color:#fff; border-color:var(--blue)">Ver resposta</button>
+            <button class="btn-sm btn-ver-ficha" data-id="${lead.id}">Ver Ficha</button>
             ${chatBtn}
             <button class="btn-sm btn-descartar-pipe" data-id="${lead.id}">Descartar</button>
           `;
         } else if (lead.status === 'objecao') {
           actsHTML = `
             <button class="btn-sm btn-followup" data-id="${lead.id}" style="background:var(--amber); color:#000; border-color:var(--amber)">Responder Objeção</button>
+            <button class="btn-sm btn-ver-ficha" data-id="${lead.id}">Ver Ficha</button>
             ${chatBtn}
             <button class="btn-sm btn-descartar-pipe" data-id="${lead.id}">Descartar</button>
           `;
@@ -256,6 +267,16 @@ window.AGENCIA.painelComercial = (function() {
         btn.addEventListener('click', (e) => {
           const id = e.target.getAttribute('data-id');
           window.AGENCIA.ui.abrirModalChat(id);
+        });
+      });
+      el.querySelectorAll('.btn-ver-ficha').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.target.getAttribute('data-id');
+          const lead = s.pipeline.find(l => l.id === id);
+          if (lead) {
+            lead.fichaConsultada = true;
+            if (window.AGENCIA.ui.mostrarFichaLead) window.AGENCIA.ui.mostrarFichaLead(lead);
+          }
         });
       });
     }

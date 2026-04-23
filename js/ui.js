@@ -520,7 +520,8 @@ window.AGENCIA.ui = {
       rotaId: null,
       rodadas: [],
       rodadaAtual: 0,
-      impactosAcc: { deltaConfianca: 0, deltaChanceObjecao: 0, revealTicket: false, revealUrgencia: false, revealPerfil: false, revealDecisor: false }
+      impactosAcc: { deltaConfianca: 0, deltaChanceObjecao: 0, revealTicket: false, revealUrgencia: false, revealPerfil: false, revealDecisor: false },
+      observacoes: []
     };
 
     const BAL = window.AGENCIA.BAL;
@@ -635,6 +636,8 @@ window.AGENCIA.ui = {
     const qs = this._qualState;
     if (!qs) return;
     
+    const s = window.AGENCIA.getState();
+    const lead = s.pipeline.find(l => l.id === qs.leadId);
     const BAL = window.AGENCIA.BAL;
     const rId = qs.rodadas[qs.rodadaAtual];
     const rodada = BAL.qualificacao.rodadas[rId];
@@ -645,6 +648,23 @@ window.AGENCIA.ui = {
     if (imp.revealUrgencia) qs.impactosAcc.revealUrgencia = true;
     if (imp.revealPerfil) qs.impactosAcc.revealPerfil = true;
     if (imp.revealDecisor) qs.impactosAcc.revealDecisor = true;
+
+    // --- REGISTRO DE OBSERVAÇÕES ---
+    if (rId === 'rodada_orcamento' && (opcaoIdx === 0 || opcaoIdx === 2)) {
+      const seg = BAL.segmentos[s.agencia.segmento];
+      const faixa = Math.round((seg.ticketMin + seg.ticketMax) / 2).toLocaleString('pt-BR');
+      qs.observacoes.push('Orçamento estimado: R$ ' + faixa);
+    }
+    if (rId === 'rodada_urgencia' && (opcaoIdx === 0 || opcaoIdx === 1)) {
+      qs.observacoes.push('Cliente tem data definida: partida em ' + (lead.detalhesViagem?.dataPartidaEmDias || 15) + ' dias');
+    }
+    if (rId === 'rodada_decisor' && opcaoIdx === 0) {
+      const solo = lead.detalhesViagem?.passageiros === 1;
+      qs.observacoes.push('Decisor: ' + (solo ? 'único' : 'precisa consultar'));
+    }
+    if (rId === 'rodada_experiencia_anterior' && opcaoIdx === 0) {
+      qs.observacoes.push('Cliente mencionou experiência anterior de viagem');
+    }
 
     // Calcular delta confianca com base no perfil (se existir modificador)
     let dConf = imp.deltaConfianca.padrao || 0;
@@ -704,8 +724,8 @@ window.AGENCIA.ui = {
     const qs = this._qualState;
     if (!qs) return;
     
-    // Aplica na engine
-    window.AGENCIA.pipeline.aplicarQualificacao(qs.leadId, qs.impactosAcc);
+    // Aplica na engine passando as observações coletadas
+    window.AGENCIA.pipeline.aplicarQualificacao(qs.leadId, qs.impactosAcc, qs.observacoes);
 
     const el = document.getElementById('modal-overlay-qualificacao');
     if (el) el.remove();
@@ -927,7 +947,10 @@ window.AGENCIA.ui = {
             <button id="btn-chat-send" class="btn-start" style="width: auto; padding: 0 20px;" disabled>Enviar</button>
           </div>
           <div style="display: flex; justify-content: space-between; width: 100%; margin-top: 5px;">
-            <button class="btn-sm" onclick="window.AGENCIA.ui.encerrarChatSessao()">Encerrar Negociação</button>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn-sm" onclick="window.AGENCIA.ui.encerrarChatSessao()">Encerrar Negociação</button>
+              <button class="btn-sm" onclick="window.AGENCIA.ui.abrirCadernoAgente(true)">📋 Caderno</button>
+            </div>
             <div style="font-size: 10px; color: var(--text-3);">Modo Brasil Real (Gemini API)</div>
           </div>
         </div>
@@ -1200,6 +1223,204 @@ window.AGENCIA.ui = {
     if (perfil === 'detalhista') return "Forneça dados precisos. Respostas genéricas fazem você parecer amador para ele.";
     
     return "Tente ouvir mais as necessidades do cliente antes de empurrar a venda.";
+  },
+
+  // ----------------------------------------------------------
+  // FICHA DO LEAD (Ficha completa após qualificação)
+  // ----------------------------------------------------------
+  mostrarFichaLead: function(lead) {
+    const old = document.getElementById('modal-ficha-lead');
+    if (old) old.remove();
+
+    const BAL = window.AGENCIA.BAL;
+    const s = window.AGENCIA.getState();
+    const seg = BAL.segmentos[lead.segmento || s.agencia.segmento];
+
+    const el = document.createElement('div');
+    el.id = 'modal-ficha-lead';
+    el.className = 'modal-overlay';
+    el.style.zIndex = '3000';
+
+    const obs = lead.detalhesViagem.observacoes || [];
+    const obsHtml = obs.length > 0 
+      ? obs.map(o => `<div style="padding:4px 0; border-bottom:1px solid var(--border); font-size:12px;">• ${o}</div>`).join('')
+      : '<div style="color:var(--text-3); font-size:12px; font-style:italic;">Nenhuma observação registrada na qualificação.</div>';
+
+    const dv = lead.detalhesViagem;
+
+    el.innerHTML = `
+      <div class="modal-box fade-in" style="max-width: 480px;">
+        <div class="modal-header">
+          <div class="modal-tipo">📋 FICHA DO LEAD</div>
+          <div class="modal-titulo">${lead.nome}</div>
+        </div>
+        <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+          
+          <div style="margin-bottom:16px;">
+            <div style="font-size:11px; font-weight:700; color:var(--blue); letter-spacing:1px; margin-bottom:8px; border-bottom:1px solid var(--blue-bg); padding-bottom:4px;">DADOS DA VIAGEM</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:13px;">
+              <div>Origem: <strong>${dv.origem}</strong></div>
+              <div>Destino: <strong>${dv.destino}</strong></div>
+              <div>Partida em: <strong>${dv.dataPartidaEmDias} dias</strong></div>
+              <div>Duração: <strong>${dv.duracaoDias} dias</strong></div>
+              <div>Passageiros: <strong>${dv.passageiros}</strong></div>
+              <div>Segmento: <strong>${seg.label}</strong></div>
+            </div>
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <div style="font-size:11px; font-weight:700; color:var(--blue); letter-spacing:1px; margin-bottom:8px; border-bottom:1px solid var(--blue-bg); padding-bottom:4px;">O QUE O CLIENTE QUER</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:12px;">
+              <div style="display:flex; align-items:center; gap:6px;">${dv.inclusoAereo ? '✅' : '❌'} Aéreo</div>
+              <div style="display:flex; align-items:center; gap:6px;">${dv.inclusoHotel ? '✅' : '❌'} Hotel</div>
+              <div style="display:flex; align-items:center; gap:6px;">${dv.inclusoSeguro ? '✅' : '❌'} Seguro Viagem</div>
+              <div style="display:flex; align-items:center; gap:6px;">${dv.inclusoTransfer ? '✅' : '❌'} Transfer</div>
+            </div>
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <div style="font-size:11px; font-weight:700; color:var(--blue); letter-spacing:1px; margin-bottom:8px; border-bottom:1px solid var(--blue-bg); padding-bottom:4px;">PERFIL E COMPORTAMENTO</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:13px;">
+              <div>Perfil: <strong>${lead.revealPerfil ? (BAL.perfis[lead.perfil]?.label || lead.perfil) : 'Não identificado'}</strong></div>
+              <div>Confiança: <strong>${lead.confianca}/100</strong></div>
+              <div>Sensibilidade: <strong>${lead.sensibilidadePreco < 40 ? 'Baixa' : lead.sensibilidadePreco < 70 ? 'Média' : 'Alta'}</strong></div>
+              <div>Urgência Real: <strong>${lead.urgenciaReal ? lead.urgenciaReal.toUpperCase() : lead.urgencia.toUpperCase()}</strong></div>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-size:11px; font-weight:700; color:var(--blue); letter-spacing:1px; margin-bottom:8px; border-bottom:1px solid var(--blue-bg); padding-bottom:4px;">OBSERVAÇÕES DA QUALIFICAÇÃO</div>
+            <div style="background:var(--bg-body); padding:10px; border-radius:6px;">
+              ${obsHtml}
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button class="btn-start" onclick="document.getElementById('modal-ficha-lead').remove()" style="width:100%;">Fechar</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(el);
+  },
+
+  // ----------------------------------------------------------
+  // CADERNO DO AGENTE (Abas com dicas e informações)
+  // ----------------------------------------------------------
+  abrirCadernoAgente: function(duranteChat = false) {
+    if (duranteChat && this._chatSessao) {
+      this._chatSessao.cadernoConsultado = true;
+    }
+
+    const old = document.getElementById('modal-caderno-agente');
+    if (old) old.remove();
+
+    const el = document.createElement('div');
+    el.id = 'modal-caderno-agente';
+    el.className = 'modal-overlay';
+    el.style.zIndex = '4000';
+
+    el.innerHTML = `
+      <div class="modal-box fade-in" style="max-width: 600px; padding:0; overflow:hidden;">
+        <div class="modal-header" style="padding:20px; border-bottom:1px solid var(--border);">
+          <div class="modal-tipo">📖 FERRAMENTA DE APOIO</div>
+          <div class="modal-titulo">Caderno do Agente</div>
+        </div>
+        
+        <div class="caderno-tabs" style="display:flex; background:var(--bg-input); border-bottom:1px solid var(--border);">
+          <button class="tab-btn active" onclick="window.AGENCIA.ui._switchCadernoTab(this, 'tab-segmentos')">Segmentos</button>
+          <button class="tab-btn" onclick="window.AGENCIA.ui._switchCadernoTab(this, 'tab-politicas')">Políticas</button>
+          <button class="tab-btn" onclick="window.AGENCIA.ui._switchCadernoTab(this, 'tab-perfis')">Perfis</button>
+        </div>
+
+        <div class="modal-body" id="caderno-content" style="max-height: 60vh; overflow-y: auto; padding:20px;">
+          
+          <!-- Aba 1: Segmentos -->
+          <div id="tab-segmentos" class="caderno-tab-content">
+            <div class="caderno-secao">
+              <h4>Lazer Nacional</h4>
+              <p>Aéreo + hotel geralmente incluso no pacote.</p>
+              <ul>
+                <li><strong>Bagagem:</strong> Gol/Latam/Azul — 1 item pessoal + 1 bagagem de mão (básico).</li>
+                <li><strong>Seguro:</strong> opcional — R$ 80 a 150 por pessoa.</li>
+                <li><strong>Transfer:</strong> opcional — R$ 60 a 120 por trecho.</li>
+                <li><strong>Fee sugerido:</strong> R$ 150 a 300 por pessoa.</li>
+              </ul>
+            </div>
+            <div class="caderno-secao">
+              <h4>Lazer Internacional</h4>
+              <p>Aéreo + hotel + seguro frequentemente no pacote.</p>
+              <ul>
+                <li><strong>Câmbio e taxas:</strong> incluir no custo líquido.</li>
+                <li><strong>Transfer:</strong> recomendado — R$ 80 a 200 por trecho.</li>
+                <li><strong>Fee sugerido:</strong> R$ 300 a 600 por pessoa.</li>
+              </ul>
+            </div>
+            <div class="caderno-secao">
+              <h4>Econômico</h4>
+              <p>Cliente sensível a preço — fee mais baixo, margem apertada.</p>
+              <ul>
+                <li>Priorizar aéreo mais barato e hotel simples.</li>
+                <li>Seguro pode gerar resistência.</li>
+                <li><strong>Fee sugerido:</strong> R$ 80 a 150 por pessoa.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Aba 2: Políticas -->
+          <div id="tab-politicas" class="caderno-tab-content" style="display:none;">
+            <h4>Cancelamento e Garantias</h4>
+            <p>Política padrão do mercado brasileiro:</p>
+            <div style="background:var(--bg-body); padding:12px; border-radius:8px; margin:12px 0;">
+              <ul style="margin:0; padding-left:20px; font-size:13px; line-height:1.6;">
+                <li><strong>Até 30 dias antes:</strong> reembolso de ~70%</li>
+                <li><strong>15 a 30 dias antes:</strong> reembolso de ~40%</li>
+                <li><strong>Menos de 15 dias:</strong> sem reembolso</li>
+                <li><strong>Com seguro viagem:</strong> cobertura conforme apólice</li>
+              </ul>
+            </div>
+            <p style="font-size:12px; color:var(--amber); font-weight:600;">💡 Dica: mencione a política de cancelamento cedo com clientes inseguros — isso aumenta a confiança antes de falar em preço.</p>
+          </div>
+
+          <!-- Aba 3: Perfis -->
+          <div id="tab-perfis" class="caderno-tab-content" style="display:none;">
+            <div class="caderno-secao">
+              <h4>Caçador de Preço</h4>
+              <p>Justifique o valor antes de comparar com OTAs. Mencione o suporte e seguro. Não ceda desconto na primeira solicitação.</p>
+            </div>
+            <div class="caderno-secao">
+              <h4>Inseguro</h4>
+              <p>Fale sobre cancelamento e suporte antes do preço. Mencione que você estará disponível durante a viagem.</p>
+            </div>
+            <div class="caderno-secao">
+              <h4>Apressado</h4>
+              <p>Máximo 2 frases por resposta. Diga o total e o que está incluso. Não enrole.</p>
+            </div>
+            <div class="caderno-secao">
+              <h4>Detalhista</h4>
+              <p>Tenha os dados prontos (categoria hotel, nota Booking, bagagem). Imprecisão destrói a confiança.</p>
+            </div>
+            <div class="caderno-secao">
+              <h4>Indicação</h4>
+              <p>Mencione quem o indicou. Personalize a conversa com detalhes específicos.</p>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="modal-footer" style="padding:16px 20px; border-top:1px solid var(--border);">
+          <button class="btn-start" onclick="document.getElementById('modal-caderno-agente').remove()" style="width:100%;">Fechar Caderno</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(el);
+  },
+
+  _switchCadernoTab: function(btn, tabId) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.caderno-tab-content').forEach(t => t.style.display = 'none');
+    document.getElementById(tabId).style.display = 'block';
   },
 
   // Atualiza topbar

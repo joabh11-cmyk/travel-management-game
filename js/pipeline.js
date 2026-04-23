@@ -52,11 +52,14 @@ window.AGENCIA.pipeline = (function() {
   }
 
   // Ação 1.1: Finalizar Qualificação Conversacional
-  function aplicarQualificacao(id, impactosAcc) {
+  function aplicarQualificacao(id, impactosAcc, observacoes = []) {
     const s = window.AGENCIA.getState();
     const BAL = window.AGENCIA.BAL;
     const lead = getLead(id);
     if (!lead || lead.status !== 'qualificando') return false;
+
+    if (!lead.detalhesViagem) lead.detalhesViagem = { observacoes: [] };
+    lead.detalhesViagem.observacoes = (lead.detalhesViagem.observacoes || []).concat(observacoes);
 
     const seg = BAL.segmentos[s.agencia.segmento];
 

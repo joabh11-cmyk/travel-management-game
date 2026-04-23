@@ -112,18 +112,20 @@ window.AGENCIA.leads = (function() {
     // Perfil
     const perfilId = _sortearPerfil(BAL);
     
-    // Urgência: 1 (urgente), 2 (normal), 3 (frio)
     const urgRandom = Math.random();
-    let urgenciaText, diasValidade;
+    let urgenciaText, diasValidade, janelaDias;
     if (urgRandom < 0.25) {
       urgenciaText = 'urgente';
       diasValidade = 1;
+      janelaDias = Math.floor(2 + Math.random() * 5);
     } else if (urgRandom < 0.65) {
       urgenciaText = 'normal';
       diasValidade = 2;
+      janelaDias = Math.floor(7 + Math.random() * 15);
     } else {
       urgenciaText = 'frio';
       diasValidade = 3;
+      janelaDias = Math.floor(20 + Math.random() * 40);
     }
 
     const lead = {
@@ -132,10 +134,29 @@ window.AGENCIA.leads = (function() {
       canal: canalId,
       perfil: perfilId,
       urgencia: urgenciaText,
+      janelaDias: janelaDias,
       diasRestantes: diasValidade,
       confianca: Math.round(confiancaBase),
       diaCriacao: s.tempo.dia,
-      status: 'novo'
+      status: 'novo',
+      segmento: s.agencia.segmento // Salva o segmento no lead para referência
+    };
+
+    // Gera detalhes da viagem
+    const segmento = s.agencia.segmento;
+    lead.detalhesViagem = {
+      origem: _sortearCidade(),
+      destino: _sortearDestino(segmento),
+      dataPartidaEmDias: lead.janelaDias,
+      duracaoDias: segmento === 'lazernacional' ? Math.floor(5 + Math.random() * 6)
+                 : segmento === 'laserinternacional' ? Math.floor(8 + Math.random() * 7)
+                 : Math.floor(3 + Math.random() * 5),
+      passageiros: 1 + Math.floor(Math.random() * 3),
+      inclusoAereo:    Math.random() < (segmento === 'lazernacional' ? 0.90 : 0.95),
+      inclusoHotel:    Math.random() < 0.85,
+      inclusoSeguro:   Math.random() < 0.40,
+      inclusoTransfer: Math.random() < 0.30,
+      observacoes: []
     };
 
     // Lead corporativo
@@ -147,6 +168,21 @@ window.AGENCIA.leads = (function() {
     }
 
     s.leads.push(lead);
+  }
+
+  function _sortearCidade() {
+    const cidades = ['São Paulo', 'Rio de Janeiro', 'Belo Horizonte', 'Salvador', 'Fortaleza', 'Recife', 'Curitiba', 'Porto Alegre', 'Brasília', 'Manaus', 'Belém', 'Florianópolis'];
+    return cidades[Math.floor(Math.random() * cidades.length)];
+  }
+
+  function _sortearDestino(segmento) {
+    const destinos = {
+      lazernacional: ['Florianópolis', 'Porto de Galinhas', 'Natal', 'Gramado', 'Foz do Iguaçu', 'Búzios', 'Maceió', 'Bonito', 'Bariloche BR', 'Chapada dos Veadeiros'],
+      laserinternacional: ['Orlando', 'Lisboa', 'Paris', 'Cancún', 'Buenos Aires', 'Miami', 'Roma', 'Londres', 'Punta Cana', 'Nova York'],
+      economico: ['São Paulo', 'Rio de Janeiro', 'Salvador', 'Fortaleza', 'Curitiba']
+    };
+    const lista = destinos[segmento] || destinos.economico;
+    return lista[Math.floor(Math.random() * lista.length)];
   }
 
   // Reduz validade e expira leads não atendidos
