@@ -89,6 +89,11 @@ window.AGENCIA.pipeline = (function() {
     lead.qualificado = true;
     moverLead(lead, 'cotando');
     window.AGENCIA.loop.logEvento(s, 'acao', `🔍 Qualificação de ${lead.nome} concluída. Confiança ajustada para ${lead.confiancaInicial}.`);
+    
+    if (window.AGENCIA.save && window.AGENCIA.save.autoSave) {
+      window.AGENCIA.save.autoSave();
+    }
+
     window.AGENCIA.ui.renderizarPainelAtivo();
     return true;
   }
@@ -131,8 +136,12 @@ window.AGENCIA.pipeline = (function() {
     const s = window.AGENCIA.getState();
     const lead = getLead(id);
     if (!lead) return;
-    moverLead(lead, 'perdido');
     _registrarPerda(s, lead, motivo);
+
+    if (window.AGENCIA.save && window.AGENCIA.save.autoSave) {
+      window.AGENCIA.save.autoSave();
+    }
+
     window.AGENCIA.ui.renderizarPainelAtivo();
   }
 
@@ -163,6 +172,10 @@ window.AGENCIA.pipeline = (function() {
     }
 
     window.AGENCIA.loop.logEvento(s, 'acao', `🏆 Venda fechada com ${lead.nome}!`);
+
+    if (window.AGENCIA.save && window.AGENCIA.save.autoSave) {
+      window.AGENCIA.save.autoSave();
+    }
   }
 
   // Verifica cotações expiradas a cada dia

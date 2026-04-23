@@ -137,6 +137,10 @@ window.AGENCIA.registrarEntrada = function(descricao, valor, origem) {
   s.caixa.entradas.push({ descricao, valor, origem, dia: s.tempo.dia });
   s.caixa.saldo += valor;
   s.kpis.receitaBruta += valor;
+  
+  if (window.AGENCIA.save && window.AGENCIA.save.autoSave) {
+    window.AGENCIA.save.autoSave();
+  }
 };
 
 // Adiciona saída no caixa
@@ -149,6 +153,10 @@ window.AGENCIA.registrarSaida = function(descricao, valor, categoria) {
     s.caixa.diasSaldoNegativo++;
   } else {
     s.caixa.diasSaldoNegativo = 0;
+  }
+
+  if (window.AGENCIA.save && window.AGENCIA.save.autoSave) {
+    window.AGENCIA.save.autoSave();
   }
 };
 

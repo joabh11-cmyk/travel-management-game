@@ -94,6 +94,11 @@ window.AGENCIA.chatSimulator = (function() {
   function encerrarChat(sessao) {
     const res = window.AGENCIA.clientAI.decisaoFinal(sessao);
     sessao.feedbackCompleto = _gerarFeedbackCompleto(sessao, res);
+    
+    if (window.AGENCIA.save && window.AGENCIA.save.autoSave) {
+      window.AGENCIA.save.autoSave();
+    }
+    
     return res;
   }
 

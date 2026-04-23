@@ -66,6 +66,11 @@ window.AGENCIA.loop = (function() {
       if (go && go.gameOver) {
         s.gameOver = true;
         s.gameOverMotivo = go.motivo;
+        
+        if (window.AGENCIA.save && window.AGENCIA.save.limparSaveLocal) {
+          window.AGENCIA.save.limparSaveLocal();
+        }
+
         if (window.AGENCIA.ui.mostrarGameOver) {
           window.AGENCIA.ui.mostrarGameOver(go.motivo);
         }
@@ -83,6 +88,11 @@ window.AGENCIA.loop = (function() {
 
     // 10. Re-renderizar painel ativo
     window.AGENCIA.ui.renderizarPainelAtivo();
+
+    // 11. Auto-save
+    if (window.AGENCIA.save && window.AGENCIA.save.autoSave) {
+      window.AGENCIA.save.autoSave();
+    }
   }
 
   // ----------------------------------------------------------
@@ -102,6 +112,12 @@ window.AGENCIA.loop = (function() {
 
     _logEvento(s, 'acao', `→ ${descricaoAcao} (−${custo} PA)`);
     window.AGENCIA.ui.atualizarTopbar();
+
+    // Auto-save
+    if (window.AGENCIA.save && window.AGENCIA.save.autoSave) {
+      window.AGENCIA.save.autoSave();
+    }
+
     return true;
   }
 

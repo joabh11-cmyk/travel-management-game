@@ -78,7 +78,8 @@ window.AGENCIA.ui = {
 
           <div class="form-header">
             <h2>Configurar Campanha</h2>
-            <p>Essas escolhas definem as regras e o ritmo da sua operação desde o dia 1.</p>
+            <div id="continue-container" style="margin-top: 15px;"></div>
+            <p style="margin-top: 15px;">Ou defina uma nova operação abaixo:</p>
           </div>
 
           <!-- Nome -->
@@ -166,9 +167,14 @@ window.AGENCIA.ui = {
               <span>Dificuldade: <strong id="s-dif">Difícil</strong></span>
               <span>Foco: <strong id="s-seg">🗺️ Lazer Nacional</strong></span>
             </div>
-            <button class="btn-start" id="btn-start">
-              Iniciar Campanha →
-            </button>
+            <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+              <button class="btn-start" id="btn-start" style="width: 100%;">
+                Iniciar Nova Campanha →
+              </button>
+              <button class="btn-sm" id="btn-import-save" style="background: var(--bg-card); border: 1px solid var(--border); padding: 10px; width: 100%; cursor: pointer; color: var(--text-2);">
+                📂 Importar Save (.json)
+              </button>
+            </div>
           </div>
 
         </div>
@@ -232,7 +238,33 @@ window.AGENCIA.ui = {
 
       config.nome = nome;
       window.AGENCIA.iniciarJogo(config);
+      if (window.AGENCIA.save && window.AGENCIA.save.autoSave) {
+        window.AGENCIA.save.autoSave();
+      }
       window.AGENCIA.ui.renderTelaJogo();
+    });
+
+    // Lógica de Continuar Save
+    const continueContainer = document.getElementById('continue-container');
+    if (window.AGENCIA.save && window.AGENCIA.save.temSaveLocal()) {
+      const savedState = window.AGENCIA.save.carregarDoLocalStorage();
+      if (savedState) {
+        continueContainer.innerHTML = `
+          <button class="btn-start" id="btn-continue" style="background: var(--green); border-color: var(--green); color: white; width: 100%; margin-bottom: 10px;">
+            ▶ Continuar Campanha: ${savedState.agencia.nome} (Dia ${savedState.tempo.dia})
+          </button>
+        `;
+        document.getElementById('btn-continue').addEventListener('click', () => {
+          window.AGENCIA.ui.renderTelaJogo();
+        });
+      }
+    }
+
+    // Lógica de Importar
+    document.getElementById('btn-import-save').addEventListener('click', () => {
+      if (window.AGENCIA.save && window.AGENCIA.save.importar) {
+        window.AGENCIA.save.importar();
+      }
     });
   },
 
