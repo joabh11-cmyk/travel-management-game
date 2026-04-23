@@ -50,7 +50,7 @@ window.AGENCIA.painelOperacional = {
             <div class="section-title">⚙️ Painel Operacional</div>
             <div class="section-subtitle">Dia ${s.tempo.dia} · Visão de risco e incidentes</div>
           </div>
-          <div class="phase-badge" style="${riscos.some(r=>r.icon==='🔴') ? 'background:rgba(239,68,68,.1); color:var(--red); border-color:var(--red)50;' : riscos.length > 0 ? 'background:rgba(245,158,11,.1); color:var(--amber); border-color:var(--amber)50;' : ''}">
+          <div class="phase-badge" style="${riscos.some(r=>r.icon==='🔴') ? 'background:var(--red-soft); color:var(--red); border-color:var(--red);' : riscos.length > 0 ? 'background:var(--amber-soft); color:var(--amber); border-color:var(--amber);' : ''}">
             ${riscos.some(r=>r.icon==='🔴') ? '🔴 Risco Crítico' : riscos.length > 0 ? '⚠️ Atenção' : '✅ Estável'}
           </div>
         </div>

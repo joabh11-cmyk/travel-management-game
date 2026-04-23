@@ -12,39 +12,48 @@
 
 /* ---- Tokens ---- */
 :root {
-  /* Superfícies */
+  /* Superfícies (Dark - Default) */
   --bg-base:      #0d1117;
   --bg-surface:   #161b27;
   --bg-elevated:  #1e2535;
   --bg-input:     #131920;
   --bg-hover:     #1c2333;
+  --bg-card:      #161b27;
+  --bg-modal:     #161b27;
+  --bg-modal-overlay: rgba(0,0,0,0.8);
 
   /* Bordas */
   --border:       #2a3347;
   --border-strong:#3d4f6b;
+  --border-subtle:#2a334750;
 
   /* Texto */
   --text-1:       #e2e8f0;
   --text-2:       #7a8fa6;
   --text-3:       #3d4f6b;
+  --text-inverse: #ffffff;
 
   /* Acento principal — azul aço */
   --blue:         #4f8ef7;
   --blue-bg:      #1a2540;
   --blue-border:  #2d4480;
+  --blue-soft:    rgba(79, 142, 247, 0.1);
 
   /* Positivo */
   --green:        #3fb950;
   --green-bg:     #122518;
+  --green-soft:   rgba(63, 185, 80, 0.1);
 
   /* Monetário / atenção */
   --amber:        #d29922;
   --amber-bg:     #251e0f;
   --amber-border: #3d3010;
+  --amber-soft:   rgba(210, 153, 34, 0.1);
 
   /* Perigo */
   --red:          #f85149;
   --red-bg:       #2d1414;
+  --red-soft:     rgba(248, 81, 73, 0.1);
 
   /* Neutro informativo */
   --slate:        #8b949e;
@@ -68,6 +77,47 @@
   --radius-lg: 12px;
 
   --transition: all 0.15s ease;
+}
+
+/* ---- Light Mode Overrides ---- */
+body[data-theme='light'] {
+  --bg-base:      #f6f8fa;
+  --bg-surface:   #ffffff;
+  --bg-elevated:  #f0f2f5;
+  --bg-input:     #ffffff;
+  --bg-hover:     #f1f3f5;
+  --bg-card:      #ffffff;
+  --bg-modal:     #ffffff;
+  --bg-modal-overlay: rgba(0,0,0,0.4);
+
+  --border:       #d1d5da;
+  --border-strong:#959da5;
+  --border-subtle:#d1d5da80;
+
+  --text-1:       #1f2328;
+  --text-2:       #57606a;
+  --text-3:       #8c959f;
+  --text-inverse: #ffffff;
+
+  --blue:         #0969da;
+  --blue-bg:      #ddf4ff;
+  --blue-border:  #54aeff60;
+  --blue-soft:    rgba(9, 105, 218, 0.08);
+
+  --green:        #1a7f37;
+  --green-bg:     #dafbe1;
+  --green-soft:   rgba(26, 127, 55, 0.08);
+
+  --amber:        #9a6700;
+  --amber-bg:     #fff8c5;
+  --amber-border: #d4a72c60;
+  --amber-soft:   rgba(154, 103, 0, 0.08);
+
+  --red:          #cf222e;
+  --red-bg:       #ffebe9;
+  --red-soft:     rgba(207, 34, 46, 0.08);
+
+  --slate:        #6e7781;
 }
 
 /* ---- Reset ---- */
@@ -357,7 +407,7 @@ body {
   border: none;
   border-radius: var(--radius-md);
   padding: 14px 24px;
-  color: #fff;
+  color: var(--text-inverse);
   font-family: var(--font);
   font-size: 14px;
   font-weight: 700;
@@ -365,8 +415,8 @@ body {
   transition: var(--transition);
   letter-spacing: 0.3px;
 }
-.btn-start:hover   { background: #6fa0fa; }
-.btn-start:active  { background: #3d7de8; }
+.btn-start:hover   { filter: brightness(1.1); }
+.btn-start:active  { filter: brightness(0.9); }
 
 /* ============================================================
    TELA DO JOGO
@@ -672,7 +722,7 @@ body {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.75);
+  background: var(--bg-modal-overlay, rgba(0,0,0,0.75));
   display: flex;
   align-items: center;
   justify-content: center;

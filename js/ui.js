@@ -8,7 +8,29 @@ window.AGENCIA.ui = {
   painelAtivo: null,
 
   init: function() {
+    this.initTheme();
     this.renderTelaInicio();
+  },
+
+  // --- Sistema de Tema ---
+  initTheme: function() {
+    const savedTheme = localStorage.getItem('AG_THEME') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    this.setTheme(savedTheme);
+  },
+
+  setTheme: function(theme) {
+    document.body.setAttribute('data-theme', theme);
+    localStorage.setItem('AG_THEME', theme);
+  },
+
+  toggleTheme: function() {
+    const current = document.body.getAttribute('data-theme') || 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    this.setTheme(next);
+  },
+
+  _renderThemeToggle: function() {
+    return `<button class="theme-toggle" onclick="window.AGENCIA.ui.toggleTheme()" title="Alternar Tema">🌓</button>`;
   },
 
   // ----------------------------------------------------------
@@ -29,6 +51,7 @@ window.AGENCIA.ui = {
 
     const el = document.getElementById('tela-inicio');
     el.innerHTML = `
+      ${this._renderThemeToggle()}
 
       <!-- Coluna esquerda: branding e contexto -->
       <div class="inicio-left">
@@ -285,6 +308,7 @@ window.AGENCIA.ui = {
 
     el.innerHTML = `
       <aside class="sidebar">
+        ${this._renderThemeToggle()}
         <div class="sidebar-brand">
           <div class="sidebar-brand-name">AGÊNCIA</div>
           <div class="sidebar-brand-agency" title="${this._esc(ag.nome)}">${this._esc(ag.nome)}</div>
@@ -384,7 +408,7 @@ window.AGENCIA.ui = {
         <div class="card-header">
           <div class="card-title">Log do Dia ${s.tempo.dia}</div>
           <button class="btn-sm" onclick="if(window.AGENCIA.getState().eventosPendentes && window.AGENCIA.getState().eventosPendentes.length > 0) { alert('Resolva os eventos pendentes antes de avançar o dia!'); window.AGENCIA.ui.mostrarEventosPendentes(); } else { window.AGENCIA.loop.avancarDia(); window.AGENCIA.ui.renderizarPainelAtivo(); }" id="btn-avancar-dia"
-            style="background:var(--blue);border-color:var(--blue);color:#fff;padding:6px 16px;font-weight:700;">
+            style="background:var(--blue);border-color:var(--blue);color:var(--text-inverse);padding:6px 16px;font-weight:700;">
             Avançar Dia →
           </button>
         </div>
@@ -460,11 +484,11 @@ window.AGENCIA.ui = {
     el.className = 'modal-overlay';
 
     const extraSemanal = !isMensal ? `
-      <div style="margin:14px 0; padding:12px; background:rgba(99,102,241,0.06); border-radius:8px; border-left:3px solid var(--blue);">
+      <div style="margin:14px 0; padding:12px; background:var(--blue-soft); border-radius:8px; border-left:3px solid var(--blue);">
         <div style="font-size:12px; color:var(--text-2); font-weight:700; letter-spacing:.5px; margin-bottom:6px;">ALERTA DA SEMANA</div>
         <div style="font-size:13px; color:var(--text);">${dados.alertaPrincipal || '—'}</div>
       </div>
-      <div style="margin:0 0 14px; padding:12px; background:rgba(34,197,94,0.05); border-radius:8px; border-left:3px solid var(--green);">
+      <div style="margin:0 0 14px; padding:12px; background:var(--green-soft); border-radius:8px; border-left:3px solid var(--green);">
         <div style="font-size:12px; color:var(--text-2); font-weight:700; letter-spacing:.5px; margin-bottom:6px;">RECOMENDAÇÃO</div>
         <div style="font-size:13px; color:var(--text);">${dados.recomendacao || '—'}</div>
       </div>
@@ -474,7 +498,7 @@ window.AGENCIA.ui = {
         <div class="stat-tile"><div class="stat-tile-label">Margem</div><div class="stat-tile-value ${parseFloat(dados.margemPct||0)>=10?'g':'r'}">${dados.margemPct || '0.0'}%</div></div>
       </div>
     ` : `
-      <div style="margin:14px 0; padding:12px; background:rgba(99,102,241,0.06); border-radius:8px;">
+      <div style="margin:14px 0; padding:12px; background:var(--blue-soft); border-radius:8px;">
         <div style="font-size:12px; color:var(--text-2); font-weight:700; letter-spacing:.5px; margin-bottom:6px;">CICLO MENSAL CONCLUÍDO</div>
         <div style="font-size:13px; color:var(--text); line-height:1.6;">
           ${dados.resultado >= 0 ? '✅ Mês encerrado com saldo positivo. Você está construindo a base da agência.' : '🔴 Mês no vermelho. Revise custos e taxa de conversão antes do próximo ciclo.'}

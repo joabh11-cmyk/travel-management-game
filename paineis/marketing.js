@@ -83,7 +83,7 @@ window.AGENCIA.painelMarketing = {
           <div class="card-header" style="justify-content: space-between;">
             <div style="display:flex; gap:10px; align-items:center;">
               <div class="card-title">${cfg.emoji} ${cfg.label}</div>
-              <span class="badge" style="${cfg.tipo === 'organico' ? 'background:rgba(34,197,94,.15);color:#22c55e;' : cfg.tipo === 'pago' ? 'background:rgba(239,68,68,.15);color:#ef4444;' : 'background:rgba(251,146,60,.15);color:#fb923c;'}">${cfg.tipo}</span>
+              <span class="badge" style="${cfg.tipo === 'organico' ? 'background:var(--green-soft);color:var(--green);' : cfg.tipo === 'pago' ? 'background:var(--red-soft);color:var(--red);' : 'background:var(--amber-soft);color:var(--amber);'}">${cfg.tipo}</span>
             </div>
             <div>
               <label style="font-size:11px; color:var(--text-2); margin-right:5px;">Intensidade:</label>
@@ -160,7 +160,7 @@ window.AGENCIA.painelMarketing = {
 
         ${htmlGrupos}
 
-        <div class="card" style="border-style:dashed; margin-top:20px; background:rgba(59,130,246,0.05);">
+        <div class="card" style="border-style:dashed; margin-top:20px; background:var(--blue-soft);">
           <div style="font-size:12px; color:var(--text-2); line-height:1.6;">
             <strong style="color:var(--primary);">💡 Dica Estratégica:</strong>
             Canais pagos geram volume rápido, mas possuem confiança menor e CAC mais alto. 

@@ -60,7 +60,7 @@ window.AGENCIA.painelMercado = {
     let riscoLabel, riscoColor;
     if (riscoScore >= 7) { riscoLabel = 'CRÍTICO'; riscoColor = 'var(--red)'; }
     else if (riscoScore >= 4) { riscoLabel = 'ELEVADO'; riscoColor = 'var(--amber)'; }
-    else if (riscoScore >= 2) { riscoLabel = 'Moderado'; riscoColor = '#f59e0b'; }
+    else if (riscoScore >= 2) { riscoLabel = 'Moderado'; riscoColor = 'var(--amber)'; }
     else { riscoLabel = 'Baixo'; riscoColor = 'var(--green)'; }
 
     // --- Janela de oportunidade ---
@@ -145,7 +145,7 @@ window.AGENCIA.painelMercado = {
         </div>
 
         <!-- Janela de oportunidade -->
-        <div class="card" style="border-color:var(--blue)20; background:rgba(99,102,241,0.04); margin-bottom:16px;">
+        <div class="card" style="border-color:var(--blue-subtle); background:var(--blue-soft); margin-bottom:16px;">
           <div style="font-size:13px; color:var(--text); line-height:1.7; padding: 4px 0;">
             ${janela}
           </div>

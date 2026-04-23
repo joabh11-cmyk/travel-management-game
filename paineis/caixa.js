@@ -52,7 +52,7 @@ window.AGENCIA.painelCaixa = {
 
         <!-- Alertas Ativos -->
         ${(s.alertas && s.alertas.length > 0) ? `
-        <div class="card" style="border-color:var(--amber); background:rgba(245,158,11,0.05);">
+        <div class="card" style="border-color:var(--amber); background:var(--amber-soft);">
           <div class="card-header"><div class="card-title" style="color:var(--amber);">⚠️ Alertas F6 Ativos</div></div>
           <div style="padding: 10px; font-size: 13px; color:var(--text); line-height: 1.5;">
             ${s.alertas.map(a => `<div>${a}</div>`).join('')}

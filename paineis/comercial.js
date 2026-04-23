@@ -197,25 +197,25 @@ window.AGENCIA.painelComercial = (function() {
 
         if (lead.status === 'qualificando') {
           actsHTML = `
-            <button class="btn-sm btn-qualificar" data-id="${lead.id}" style="background:var(--blue); color:#fff; border-color:var(--blue)">Qualificar (1 PA)</button>
+            <button class="btn-sm btn-qualificar" data-id="${lead.id}" style="background:var(--blue); color:var(--text-inverse); border-color:var(--blue)">Qualificar (1 PA)</button>
             <button class="btn-sm btn-descartar-pipe" data-id="${lead.id}">Descartar</button>
           `;
         } else if (lead.status === 'cotando') {
           actsHTML = `
-            <button class="btn-sm btn-cotar" data-id="${lead.id}" style="background:var(--green); color:#fff; border-color:var(--green)">Criar Cotação (1 PA)</button>
+            <button class="btn-sm btn-cotar" data-id="${lead.id}" style="background:var(--green); color:var(--text-inverse); border-color:var(--green)">Criar Cotação (1 PA)</button>
             <button class="btn-sm btn-ver-ficha" data-id="${lead.id}">Ver Ficha</button>
             <button class="btn-sm btn-descartar-pipe" data-id="${lead.id}">Descartar</button>
           `;
         } else if (lead.status === 'cotacao_enviada') {
           actsHTML = `
-            <button class="btn-sm btn-ver-resposta" data-id="${lead.id}" style="background:var(--blue); color:#fff; border-color:var(--blue)">Ver resposta</button>
+            <button class="btn-sm btn-ver-resposta" data-id="${lead.id}" style="background:var(--blue); color:var(--text-inverse); border-color:var(--blue)">Ver resposta</button>
             <button class="btn-sm btn-ver-ficha" data-id="${lead.id}">Ver Ficha</button>
             ${chatBtn}
             <button class="btn-sm btn-descartar-pipe" data-id="${lead.id}">Descartar</button>
           `;
         } else if (lead.status === 'objecao') {
           actsHTML = `
-            <button class="btn-sm btn-followup" data-id="${lead.id}" style="background:var(--amber); color:#000; border-color:var(--amber)">Responder Objeção</button>
+            <button class="btn-sm btn-followup" data-id="${lead.id}" style="background:var(--amber); color:var(--bg-base); border-color:var(--amber)">Responder Objeção</button>
             <button class="btn-sm btn-ver-ficha" data-id="${lead.id}">Ver Ficha</button>
             ${chatBtn}
             <button class="btn-sm btn-descartar-pipe" data-id="${lead.id}">Descartar</button>

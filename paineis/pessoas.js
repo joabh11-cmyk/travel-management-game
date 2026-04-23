@@ -53,7 +53,7 @@ window.AGENCIA.painelPessoas = {
     let sobrecargaLabel, sobrecargaColor;
     if (fadiga >= 95) { sobrecargaLabel = 'Esgotado — capacidade crítica'; sobrecargaColor = 'var(--red)'; }
     else if (fadiga >= 80) { sobrecargaLabel = 'Sobrecarga elevada — produtividade caindo'; sobrecargaColor = 'var(--amber)'; }
-    else if (fadiga >= 50) { sobrecargaLabel = 'Ritmo moderado — atenção à fadiga'; sobrecargaColor = '#f59e0b'; }
+    else if (fadiga >= 50) { sobrecargaLabel = 'Ritmo moderado — atenção à fadiga'; sobrecargaColor = 'var(--amber)'; }
     else { sobrecargaLabel = 'Operando bem — ritmo sustentável'; sobrecargaColor = 'var(--green)'; }
 
     // Eficiência operacional
@@ -88,7 +88,7 @@ window.AGENCIA.painelPessoas = {
           <div class="card">
             <div class="card-header">
               <div class="card-title">🛡️ Proteção Jurídica</div>
-              ${jur.planoAtivo ? `<span class="badge" style="background:rgba(34,197,94,.1);color:#22c55e;">ATIVO</span>` : '<span class="badge" style="background:rgba(239,68,68,.1);color:#ef4444;">DESPROTEGIDO</span>'}
+              ${jur.planoAtivo ? `<span class="badge" style="background:var(--green-soft);color:var(--green);">ATIVO</span>` : '<span class="badge" style="background:var(--red-soft);color:var(--red);">DESPROTEGIDO</span>'}
             </div>
             <div style="margin-top:10px;">
               ${jur.planoAtivo ? `
